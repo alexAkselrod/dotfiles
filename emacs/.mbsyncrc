@@ -1,0 +1,31 @@
+IMAPAccount goods
+Host mail.sbermegamarket.ru
+User akselrod
+PassCmd "gpg2 -q --for-your-eyes-only --no-tty -d ~/.mbsyncpass-sbermegamarket.gpg"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+AuthMechs LOGIN
+SSLVersions TLSv1.2
+
+
+IMAPStore goods-remote
+Account goods
+
+MaildirStore goods-local
+SubFolders Verbatim
+Path ~/.mail/goods/
+Inbox ~/.mail/goods/Inbox
+
+Channel goods
+Far :goods-remote:
+Near :goods-local:
+# Exclude everything under the internal [Gmail] folder, except the interesting folders
+#Patterns * ![Goods]* "[Goods]/Sent Mail" "[Goods]/Starred" "[Goods]/All Mail"
+# Or include everything
+#Patterns *
+# Automatically create missing mailboxes, both locally and on the server
+Create Both
+# Sync the movement of messages between folders and deletions, add after making sure the sync works
+Expunge Both
+# Save the synchronization state files in the relevant directory
+SyncState *
