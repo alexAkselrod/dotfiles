@@ -46,7 +46,7 @@ font-1 = "FontAwesome:size=14;2"
 font-2 = "Material Icons:size=14;5"
 font-3 = "Fira Mono:size=14;-3"
 
-modules-left = exwm exwm-path
+modules-left = exwm exwm-path backlight
 modules-right = telegram mu4e cpu temperature wireless-network battery date pulseaudio
 
 tray-position = right
@@ -262,3 +262,28 @@ format-warn-underline = ${self.format-underline}
 label = %temperature-c%
 label-warn = %temperature-c%!
 label-warn-foreground = ${colors.secondary}
+
+[module/backlight]
+type = internal/backlight
+
+; Use the following command to list available cards:
+; $ ls -1 /sys/class/backlight/
+card = intel_backlight
+
+; Use the `/sys/class/backlight/.../actual-brightness` file
+; rather than the regular `brightness` file.
+; Defaults to true unless the specified card is an amdgpu backlight.
+; New in version 3.6.0
+use-actual-brightness = true
+
+; Enable changing the backlight with the scroll wheel
+; NOTE: This may require additional configuration on some systems. Polybar will
+; write to `/sys/class/backlight/${self.card}/brightness` which requires polybar
+; to have write access to that file.
+; DO NOT RUN POLYBAR AS ROOT. 
+; The recommended way is to add the user to the
+; `video` group and give that group write-privileges for the `brightness` file.
+; See the ArchWiki for more information:
+; https://wiki.archlinux.org/index.php/Backlight#ACPI
+; Default: false
+enable-scroll = true

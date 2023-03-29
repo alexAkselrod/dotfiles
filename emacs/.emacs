@@ -232,9 +232,18 @@
 ;;(setq debug-on-error t)
 ;;==========================Other================================================================
 ;;==========================Chats================================================================
+
+(use-package visual-fill-column
+  :ensure t)
+(use-package rainbow-identifiers
+  :ensure t)
+
 (use-package telega
-  :ensure t
-  )
+  :load-path  "~/projects/telega.el"
+  :commands (telega)
+  :config
+  (setq telega-server-libs-prefix "/usr")
+  :defer t)
 ;;==========================Chats================================================================
 
 (custom-set-faces
@@ -248,11 +257,12 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(appt-display-format 'echo)
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(ispell-dictionary nil)
  '(package-selected-packages
-   '(excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e telega use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
+   '(excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
 ;;==============================================Mail===================================================================
 
 (setq dw/mail-enabled nil)
@@ -274,7 +284,7 @@
   ;; Refresh mail using isync every 10 minutes
   (setq mu4e-update-interval (* 10 60))
   (setq mu4e-get-mail-command "mbsync -a")
-  (setq mu4e-maildir "~/.mail")
+  (setq mu4e-maildir "~/.mail/goods")
       ;; Make sure that moving a message (like to Trash) causes the
     ;; message to get a new file name.  This helps to avoid the
     ;; dreaded "UID is N beyond highest assigned" error.
