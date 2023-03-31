@@ -262,58 +262,58 @@
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(ispell-dictionary nil)
  '(package-selected-packages
-   '(excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
+   '(ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
 ;;==============================================Mail===================================================================
 
-(setq dw/mail-enabled nil)
+;; (setq dw/mail-enabled nil)
 
-(use-package excorporate
-  :ensure t
-  :config
-  (setq org-agenda-include-diary t)
-  (setq excorporate-configuration (quote ("aleksandr.akselrod@sbermegamarket.ru" . "https://10.30.48.65/EWS/Exchange.asmx")))
-  (excorporate-diary-enable)
-  )
+;; (use-package excorporate
+;;   :ensure t
+;;   :config
+;;   (setq org-agenda-include-diary t)
+;;   (setq excorporate-configuration (quote ("aleksandr.akselrod@sbermegamarket.ru" . "https://10.30.48.65/EWS/Exchange.asmx")))
+;;   (excorporate-diary-enable)
+;;   )
 
-(use-package mu4e
-  :config
+;; (use-package mu4e
+;;   :config
 
-  ;; Load org-mode integration
-  (require 'org-mu4e)
+;;   ;; Load org-mode integration
+;;   (require 'org-mu4e)
 
-  ;; Refresh mail using isync every 10 minutes
-  (setq mu4e-update-interval (* 10 60))
-  (setq mu4e-get-mail-command "mbsync -a")
-  (setq mu4e-maildir "~/.mail/goods")
-      ;; Make sure that moving a message (like to Trash) causes the
-    ;; message to get a new file name.  This helps to avoid the
-    ;; dreaded "UID is N beyond highest assigned" error.
-    ;; See this link for more info: https://stackoverflow.com/a/43461973
-  (setq mu4e-change-filenames-when-moving t)
-  ;; Display options
-  (setq mu4e-view-show-images t)
-  (setq mu4e-view-show-addresses 't)
+;;   ;; Refresh mail using isync every 10 minutes
+;;   (setq mu4e-update-interval (* 10 60))
+;;   (setq mu4e-get-mail-command "mbsync -a")
+;;   (setq mu4e-maildir "~/.mail/goods")
+;;       ;; Make sure that moving a message (like to Trash) causes the
+;;     ;; message to get a new file name.  This helps to avoid the
+;;     ;; dreaded "UID is N beyond highest assigned" error.
+;;     ;; See this link for more info: https://stackoverflow.com/a/43461973
+;;   (setq mu4e-change-filenames-when-moving t)
+;;   ;; Display options
+;;   (setq mu4e-view-show-images t)
+;;   (setq mu4e-view-show-addresses 't)
 
-  ;; Composing mail
-  (setq mu4e-compose-dont-reply-to-self t)
-  ;; Use Ivy for mu4e completions (maildir folders, etc)
-  (setq mu4e-completing-read-function #'ivy-completing-read)
-  ;; Use mu4e for sending e-mail
-  (setq mail-user-agent 'mu4e-user-agent
-        message-send-mail-function 'smtpmail-send-it
-        smtpmail-smtp-server "mail.sbermegamarket.ru"
-        smtpmail-smtp-service 587
-        smtpmail-stream-type  'starttls)
-  (require 'mu4e-icalendar)
-  (mu4e-icalendar-setup)
-  (require 'org-agenda)
-  (setq gnus-icalendar-org-capture-file "~/work/calendar.org")
-  (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
-  (gnus-icalendar-org-setup)
-  :hook
-  (mu4e-compose-pre . (lambda () 
-			(setq user-mail-address "aleksandr.akselrod@sbermegamarket.ru")))
-  )
+;;   ;; Composing mail
+;;   (setq mu4e-compose-dont-reply-to-self t)
+;;   ;; Use Ivy for mu4e completions (maildir folders, etc)
+;;   (setq mu4e-completing-read-function #'ivy-completing-read)
+;;   ;; Use mu4e for sending e-mail
+;;   (setq mail-user-agent 'mu4e-user-agent
+;;         message-send-mail-function 'smtpmail-send-it
+;;         smtpmail-smtp-server "mail.sbermegamarket.ru"
+;;         smtpmail-smtp-service 587
+;;         smtpmail-stream-type  'starttls)
+;;   (require 'mu4e-icalendar)
+;;   (mu4e-icalendar-setup)
+;;   (require 'org-agenda)
+;;   (setq gnus-icalendar-org-capture-file "~/work/calendar.org")
+;;   (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
+;;   (gnus-icalendar-org-setup)
+;;   :hook
+;;   (mu4e-compose-pre . (lambda () 
+;; 			(setq user-mail-address "aleksandr.akselrod@sbermegamarket.ru")))
+;;   )
 
 ;;==========================Ivy=======================================================================
 (use-package swiper
@@ -663,3 +663,7 @@
   (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
   (exwm-enable)
   )
+;;================================Hugo===================================
+(use-package ox-hugo
+  :ensure t)
+(setq org-hugo-base-dir "/home/alex/work/org-share")
