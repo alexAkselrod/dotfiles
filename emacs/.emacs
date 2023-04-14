@@ -262,7 +262,7 @@
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(ispell-dictionary nil)
  '(package-selected-packages
-   '(ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
+   '(typescript-mode ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
 ;;==============================================Mail===================================================================
 
 ;; (setq dw/mail-enabled nil)
@@ -667,3 +667,23 @@
 (use-package ox-hugo
   :ensure t)
 (setq org-hugo-base-dir "/home/alex/work/org-share")
+;;================================EAF====================================
+(use-package eaf
+  :load-path "~/.emacs.d/site-lisp/emacs-application-framework"
+;;  :custom
+					; See https://github.com/emacs-eaf/emacs-application-framework/wiki/Customization
+  ;;(eaf-browser-continue-where-left-off t)
+  ;;(eaf-browser-enable-adblocker t)
+  ;;(browse-url-browser-function 'eaf-open-browser)
+  :config
+  (require 'eaf-pdf-viewer)
+  (require 'eaf-browser)
+  (require 'eaf-org-previewer)
+;;  (require 'eaf-browser)
+;;  (require 'eaf-camera)
+;;  (defalias 'browse-web #'eaf-open-browser)
+  (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
+  (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
+;;  (eaf-bind-key take_photo "p" eaf-camera-keybinding)
+  ;;(eaf-bind-key nil "M-q" eaf-browser-keybinding)
+  ) ;; unbind, see more in the Wiki
