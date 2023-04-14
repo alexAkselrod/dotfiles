@@ -46,8 +46,8 @@ font-1 = "FontAwesome:size=14;2"
 font-2 = "Material Icons:size=14;5"
 font-3 = "Fira Mono:size=14;-3"
 
-modules-left = exwm exwm-path backlight
-modules-right = telegram mu4e cpu temperature wireless-network battery date pulseaudio
+modules-left = cpu temperature
+modules-right = backlight-acpi wireless-network battery date pulseaudio
 
 tray-position = right
 tray-padding = 2
@@ -263,7 +263,7 @@ label = %temperature-c%
 label-warn = %temperature-c%!
 label-warn-foreground = ${colors.secondary}
 
-[module/backlight]
+[module/backlight-acpi]
 type = internal/backlight
 
 ; Use the following command to list available cards:

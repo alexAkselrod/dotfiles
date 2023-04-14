@@ -1,4 +1,4 @@
-(use-package package)
+(require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 (setq toggle-truncate-lines t)
@@ -59,6 +59,7 @@
 ;;===============================Development=====================================================
 ;; Company mode
 (use-package company
+  :ensure t
   :init
   (setq company-idle-delay 0)
   (setq company-minimum-prefix-length 1))
@@ -104,6 +105,7 @@
 
 ;; DAP
 (use-package dap-mode
+  :ensure t
   :custom
   (lsp-enable-dap-auto-configure nil)
   :config
@@ -214,6 +216,10 @@
 
 ;;===============================UI==============================================================
 ;;==========================Auto-Save============================================================
+
+(use-package diminish
+  :ensure t)
+
 (use-package super-save
   :ensure t
   :config
@@ -239,6 +245,7 @@
   :ensure t)
 
 (use-package telega
+  :ensure t
   :load-path  "~/projects/telega.el"
   :commands (telega)
   :config
@@ -563,45 +570,55 @@
   ("C-x w" . elfeed)
   )
 ;;================================EXWM===================================
-(setq display-time-day-and-date t)
-(display-time-mode 1)
+ (setq display-time-day-and-date t)
+ (display-time-mode 1)
 
-(defun efs/exwm-update-class ()
-  (exwm-workspace-rename-buffer exwm-class-name))
+ (defun efs/exwm-update-class ()
+   (exwm-workspace-rename-buffer exwm-class-name))
+
+(require 'em-tramp)
+(setq eshell-prefer-lisp-functions t)
+(setq eshell-prefer-lisp-variables t)
+;; alias sudo 'eshell/sudo $*'
+(setq password-cache t) ; enable password caching
+(setq password-cache-expiry 3600) ; for one hour (time in secs)
+
+
 
 (use-package exwm
+  :ensure t
   :config
   ;; Set the default number of workspaces
-  (setq exwm-workspace-number 5)
+   (setq exwm-workspace-number 5)
 
-  ;; When window "class" updates, use it to set the buffer name
-  (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
+  ;; ;; When window "class" updates, use it to set the buffer name
+   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
 
-  ;; Rebind CapsLock to Ctrl
-  (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
+  ;; ;; Rebind CapsLock to Ctrl
+  ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
 
-  ;; Set the screen resolution (update this to be the correct resolution for your screen!)
-  (require 'exwm-randr)
-  (exwm-randr-enable)
+  ;; ;; Set the screen resolution (update this to be the correct resolution for your screen!)
+  ;; (require 'exwm-randr)
+  ;; (exwm-randr-enable)
   ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
 
-  (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "HDMI-1" 4 "DP-3"))
-  (setq exwm-workspace-warp-cursor t)
-  (setq mouse-autoselect-window t
-	focus-follows-mouse t)
+  ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "HDMI-1" 4 "DP-3"))
+  ;; (setq exwm-workspace-warp-cursor t)
+   (setq mouse-autoselect-window t
+   	focus-follows-mouse t)
   
-  ;; Load the system tray before exwm-init
-  ;; (require 'exwm-systemtray)
-  ;; (exwm-systemtray-enable)
+  ;; ;; Load the system tray before exwm-init
+  ;; ;; (require 'exwm-systemtray)
+  ;; ;; (exwm-systemtray-enable)
 
-    ;; using xim input
-  (setenv "GTK_IM_MODULE" "xim")
-  (setenv "QT_IM_MODULE" "xim")
-  (setenv "XMODIFIERS" "@im=exwm-xim")
-  (setenv "CLUTTER_IM_MODULE" "xim")
+     ;; using xim input
+   (setenv "GTK_IM_MODULE" "xim")
+   (setenv "QT_IM_MODULE" "xim")
+   (setenv "XMODIFIERS" "@im=exwm-xim")
+   (setenv "CLUTTER_IM_MODULE" "xim")
   
-  (require 'exwm-xim)
-  (exwm-xim-enable)
+   (require 'exwm-xim)
+   (exwm-xim-enable)
   
   (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
   ;; These keys should always pass through to Emacs
@@ -621,38 +638,38 @@
   ;; Ctrl+Q will enable the next key to be sent directly
   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
 
-  ;; Set up global key bindings.  These always work, no matter the input state!
-  ;; Keep in mind that changing this list after EXWM initializes has no effect.
-  (setq exwm-input-global-keys
-        `(
-          ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
-          ([?\s-r] . exwm-reset)
+  ;; ;; Set up global key bindings.  These always work, no matter the input state!
+  ;; ;; Keep in mind that changing this list after EXWM initializes has no effect.
+   (setq exwm-input-global-keys
+         `(
+           ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
+           ([?\s-r] . exwm-reset)
 
-          ;; Move between windows
-          ([s-left] . windmove-left)
-          ([s-right] . windmove-right)
-          ([s-up] . windmove-up)
-          ([s-down] . windmove-down)
-          ;; Launch applications via shell command
-          ([?\s-&] . (lambda (command)
-                       (interactive (list (read-shell-command "$ ")))
-                       (start-process-shell-command command nil command)))
+           ;; Move between windows
+           ([s-left] . windmove-left)
+           ([s-right] . windmove-right)
+           ([s-up] . windmove-up)
+           ([s-down] . windmove-down)
+           ;; Launch applications via shell command
+           ([?\s-&] . (lambda (command)
+                        (interactive (list (read-shell-command "$ ")))
+                        (start-process-shell-command command nil command)))
 
-          ;; Switch workspace
-          ([?\s-w] . exwm-workspace-switch)
-          ([?\s-`] . (lambda () (interactive) (exwm-workspace-switch-create 0)))
+           ;; Switch workspace
+           ([?\s-w] . exwm-workspace-switch)
+           ([?\s-`] . (lambda () (interactive) (exwm-workspace-switch-create 0)))
 
-          ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
-          ,@(mapcar (lambda (i)
-                      `(,(kbd (format "s-%d" i)) .
-                        (lambda ()
-                          (interactive)
-                          (exwm-workspace-switch-create ,i))))
-                    (number-sequence 0 9))))
+           ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
+           ,@(mapcar (lambda (i)
+                       `(,(kbd (format "s-%d" i)) .
+                         (lambda ()
+                           (interactive)
+                           (exwm-workspace-switch-create ,i))))
+                     (number-sequence 0 9))))
 
-  (defun exwm/run-in-background (command)
-    (let ((command-parts (split-string command "[ ]+")))
-      (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
+   (defun exwm/run-in-background (command)
+     (let ((command-parts (split-string command "[ ]+")))
+       (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
   (defun dw/exwm-init-hook ()
     (efs/start-panel)
