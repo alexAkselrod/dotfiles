@@ -62,7 +62,11 @@
   :ensure t
   :init
   (setq company-idle-delay 0)
-  (setq company-minimum-prefix-length 1))
+  (setq company-minimum-prefix-length 1)
+  :config
+    (global-set-key (kbd "<C-return>") 'company-complete)
+    (global-company-mode 1)
+)
 
 (use-package flycheck-golangci-lint
 	     :ensure t)
@@ -74,6 +78,45 @@
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))
 
+;; For details look here https://gitlab.com/skybert/my-little-friends/blob/master/emacs/.emacs
+;; lsp-workspace-folders-* to add/remove folder to/from LSP
+(use-package lsp-java
+  :ensure t
+  :config
+  (setq lsp-java-vmargs
+        (list
+         "-noverify"
+         "-Xmx3G"
+         "-XX:+UseG1GC"
+         "-XX:+UseStringDeduplication"
+         "-Djava.awt.headless=true"
+         )
+        lsp-java-java-path "/usr/lib/jvm/java-19-openjdk-amd64/bin/java"
+        ;; Don't organise imports on save
+        lsp-java-save-action-organize-imports nil
+	)
+  (setq lsp-java-configuration-runtimes '[(:name "JavaSE-19"
+                                                 :path "/usr/lib/jvm/java-19-openjdk-amd64"
+                                                 :default t)])
+  (add-hook 'java-mode-hook 'lsp)) 
+
+;; Man about projectile is https://docs.projectile.mx/projectile/usage.html
+;; projectile-remove-known-project
+(use-package projectile
+  :ensure t
+  :init
+  (projectile-mode +1)
+  :config
+  (setq projectile-project-search-path '("~/projects/"))
+  :bind (:map projectile-mode-map
+              ("s-p" . projectile-command-map)
+              ("C-c p" . projectile-command-map)))
+
+(use-package java-snippets
+  :ensure t)
+
+;; Manual on how to activate LSP features https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/
+;; Another good man about LSP https://develop.spacemacs.org/layers/+tools/lsp/README.html
 (use-package lsp-mode
   :ensure t
   ;; uncomment to enable gopls http debug server
@@ -85,14 +128,26 @@
    (go-mode . yas-minor-mode)
    (python-mode . lsp-deferred)
    (python-mode . yas-minor-mode)
+   (java-mode . lsp-deferred)
+   (java-mode . yas-minor-mode)
+   (lsp-mode . lsp-enable-which-key-integration)
    )
   :config (progn
             ;; use flycheck, not flymake
             (setq lsp-prefer-flymake nil)
+	      (setq gc-cons-threshold 100000000)
+	      (setq read-process-output-max (* 1024 1024)) ;; 1mb
+	      (setq lsp-idle-delay 0.500)
 	    ;;(setq lsp-trace nil)
 	    (setq lsp-print-performance nil)
 	    (setq lsp-log-io nil))
+  :bind
+    (:map lsp-mode-map
+          (("\C-\M-g" . lsp-find-implementation)
+           ("M-RET" . lsp-execute-code-action)))
   )
+
+(use-package which-key :ensure t :config (which-key-mode))
 
 (use-package lsp-ui
   :ensure t)
@@ -101,6 +156,9 @@
   :ensure t)
 
 (use-package use-package-hydra
+  :ensure t)
+
+(use-package hydra
   :ensure t)
 
 ;; DAP
@@ -120,6 +178,9 @@
   :hook
   (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra)))
   )
+
+;; Manual about treemacs is here https://github.com/Alexander-Miller/treemacs
+(use-package lsp-treemacs :ensure t)
 
 (use-package origami
   :ensure t
@@ -267,9 +328,12 @@
  '(appt-display-format 'echo)
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
+ '(default-input-method "russian-computer")
+ '(global-company-mode t)
  '(ispell-dictionary nil)
  '(package-selected-packages
-   '(typescript-mode ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
+   '(dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
+ '(telega-server-libs-prefix "/usr/local"))
 ;;==============================================Mail===================================================================
 
 ;; (setq dw/mail-enabled nil)
@@ -616,7 +680,8 @@
    (setenv "QT_IM_MODULE" "xim")
    (setenv "XMODIFIERS" "@im=exwm-xim")
    (setenv "CLUTTER_IM_MODULE" "xim")
-  
+   (setenv "EDITOR" "emacsclient")
+   
    (require 'exwm-xim)
    (exwm-xim-enable)
   
@@ -694,8 +759,6 @@
   ;;(browse-url-browser-function 'eaf-open-browser)
   :config
   (require 'eaf-pdf-viewer)
-  (require 'eaf-browser)
-  (require 'eaf-org-previewer)
 ;;  (require 'eaf-browser)
 ;;  (require 'eaf-camera)
 ;;  (defalias 'browse-web #'eaf-open-browser)
