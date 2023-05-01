@@ -35,6 +35,13 @@
   (efs/kill-panel)
   (setq efs/polybar-process (start-process-shell-command "polybar" nil "polybar panel")))
 
+(defun efs/start-firefox ()
+  (interactive)
+  (pcase exwm-workspace-current-index
+    (0 (start-process-shell-command "firefox-small" "*Messages*" "firefox"))
+    (2 (start-process-shell-command "firefox-large" "*Messages*" "GDK_SCALE=2 firefox"))
+  ))
+
 (defun efs/send-polybar-hook (module-name hook-index)
   (start-process-shell-command "polybar-msg" nil (format "polybar-msg hook %s %s" module-name hook-index)))
 
