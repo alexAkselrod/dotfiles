@@ -46,7 +46,7 @@ font-1 = "FontAwesome:size=14;2"
 font-2 = "Material Icons:size=14;5"
 font-3 = "Fira Mono:size=14;-3"
 
-modules-left = cpu temperature
+modules-left = cpu temperature exwm-workspace
 modules-right = backlight-acpi wireless-network battery date pulseaudio
 
 tray-position = right
@@ -131,6 +131,13 @@ ramp-volume-2 = 🔊
 ; Right and Middle click
 click-right = pavucontrol
 ; click-middle = 
+
+[module/exwm-workspace]
+type = custom/ipc
+hook-0 = emacsclient -e "(dw/polybar-exwm-workspace)"
+initial = 1
+format-underline = ${colors.underline-1}
+format-padding = 1
 
 [module/exwm]
 type = custom/ipc

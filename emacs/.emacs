@@ -1,3 +1,5 @@
+;; For questions look here https://github.com/daviwil/emacs-from-scratch/blob/75f1d4e08512c49ea073c26058df6d4cca3a0d6b/Desktop.org#panel-with-polybar
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
@@ -6,40 +8,17 @@
 ;;=======================Polybar===================================================
 (defun dw/polybar-exwm-workspace ()
   (pcase exwm-workspace-current-index
-    (0 "")
-    (1 "")
-    (2 "")
-    (3 "")
-    (4 "")))
+    (0 "Main")
+    (1 "Internet")
+    (2 "Video")
+    (3 3)
+    (4 4)))
+
 (defun dw/polybar-exwm-workspace-path ()
   (let ((workspace-path (frame-parameter nil 'bufler-workspace-path-formatted)))
     (if workspace-path
         (substring-no-properties workspace-path)
       "")))
-
-(defun dw/polybar-mail-count (max-count)
-  (if (and dw/mail-enabled dw/mu4e-inbox-query)
-    (let* ((mail-count (shell-command-to-string
-                         (format "mu find --nocolor -n %s \"%s\" | wc -l" max-count dw/mu4e-inbox-query))))
-      (format " %s" (string-trim mail-count)))
-    ""))
-
-(defun dw/telega-normalize-name (chat-name)
-  (let* ((trimmed-name (string-trim-left (string-trim-right chat-name "}") "◀{"))
-         (first-name (nth 0 (split-string trimmed-name " "))))
-    first-name))
-
-(defun dw/propertized-to-polybar (buffer-name)
-  (if-let* ((text (substring-no-properties buffer-name))
-            (fg-face (get-text-property 0 'face buffer-name))
-            (fg-color (face-attribute fg-face :foreground)))
-    (format "%%{F%s}%s%%{F-}" fg-color (dw/telega-normalize-name text))
-    text))
-
-(defun dw/polybar-telegram-chats ()
-  (if (> (length tracking-buffers) 0)
-    (format " %s" (string-join (mapcar 'dw/propertized-to-polybar tracking-buffers) ", "))
-    ""))
 
 (defvar efs/polybar-process nil
   "Holds the process of the running Polybar instance, if any")
@@ -55,6 +34,15 @@
   (interactive)
   (efs/kill-panel)
   (setq efs/polybar-process (start-process-shell-command "polybar" nil "polybar panel")))
+
+(defun efs/send-polybar-hook (module-name hook-index)
+  (start-process-shell-command "polybar-msg" nil (format "polybar-msg hook %s %s" module-name hook-index)))
+
+(defun efs/send-polybar-exwm-workspace ()
+  (efs/send-polybar-hook "exwm-workspace" 1))
+
+;; Update panel indicator when workspace changes
+(add-hook 'exwm-workspace-switch-hook #'efs/send-polybar-exwm-workspace)
 
 ;;===============================Development=====================================================
 ;; Company mode
@@ -296,6 +284,7 @@
 (set-default-coding-systems 'utf-8)
 (server-start)
 (setq inhibit-startup-message t)
+(set-default 'truncate-lines t)
 ;;(setq debug-on-error t)
 ;;==========================Other================================================================
 ;;==========================Chats================================================================
@@ -647,7 +636,20 @@
 (setq password-cache t) ; enable password caching
 (setq password-cache-expiry 3600) ; for one hour (time in secs)
 
+(defun efs/configure-window-by-class ()
+  (interactive)
+  (pcase exwm-class-name
+    ("firefox" (exwm-workspace-move-window 1))
+    ("Sol" (exwm-workspace-move-window 3))
+    ("mpv" (exwm-floating-toggle-floating)
+           (exwm-layout-toggle-mode-line))))
 
+(defun efs/exwm-update-class ()
+  (exwm-workspace-rename-buffer exwm-class-name))
+
+(defun efs/exwm-update-title ()
+  (pcase exwm-class-name
+    ("Firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
 
 (use-package exwm
   :ensure t
@@ -657,6 +659,8 @@
 
   ;; ;; When window "class" updates, use it to set the buffer name
    (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
+   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
+   (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
 
   ;; ;; Rebind CapsLock to Ctrl
   ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
