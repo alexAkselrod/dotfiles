@@ -20,11 +20,18 @@ underline-1 = #c792ea
 
 [bar/panel]
 width = 100%
-height = 25
+height = 50
 offset-x = 0
 offset-y = 0
 fixed-center = true
 enable-ipc = true
+
+; Set a DPI values used when rendering text
+; This only affects scalable fonts
+; Set this to 0 to let polybar calculate the dpi from the screen size.
+; dpi = 
+dpi-x = 200
+dpi-y = 200
 
 background = ${colors.background}
 foreground = ${colors.foreground}
@@ -46,8 +53,9 @@ font-1 = "FontAwesome:size=14;2"
 font-2 = "Material Icons:size=14;5"
 font-3 = "Fira Mono:size=14;-3"
 
-modules-left = cpu temperature
-modules-right = backlight-acpi wireless-network battery date pulseaudio
+modules-left = cpu temperature wireless-network
+modules-center = date 
+modules-right = backlight-acpi battery pulseaudio
 
 tray-position = right
 tray-padding = 2

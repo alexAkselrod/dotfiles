@@ -56,6 +56,36 @@
   (efs/kill-panel)
   (setq efs/polybar-process (start-process-shell-command "polybar" nil "polybar panel")))
 
+;;=============================== Office ====================================
+(setq efs/vpn-process nil)
+(setq efs/time-process nil)
+(defun efs/kill-vpn ()
+  (interactive)
+  (when efs/vpn-process
+    (ignore-errors
+      (kill-process efs/vpn-process)))
+  (setq efs/vpn-process nil))
+
+(defun efs/start-vpn ()
+  (interactive)
+    (efs/kill-vpn)
+;;  (exwm/run-in-background "/opt/cisco/anyconnect/bin/vpnui"))
+  (setq efs/time-process (start-process-shell-command "vpn" nil "/opt/cisco/anyconnect/bin/vpnui")))
+
+(defun efs/kill-time ()
+  (interactive)
+  (when efs/time-process
+    (ignore-errors
+      (kill-process efs/time-process)))
+  (setq efs/time-process nil))
+
+(defun efs/start-time ()
+  (interactive)
+  (efs/kill-time)
+  (setq efs/time-process (start-process-shell-command "time" nil "/opt/TiMe/time-desktop")))
+
+;;=============================== Office ====================================
+
 ;;===============================Development=====================================================
 ;; Company mode
 (use-package company
@@ -199,14 +229,14 @@
    (set-face-attribute 'default nil
                        :font "JetBrains Mono"
                        :weight 'light
-                       :height 130))
-  ('darwin (set-face-attribute 'default nil :font "Fira Mono" :height 130)))
+                       :height 260))
+  ('darwin (set-face-attribute 'default nil :font "Fira Mono" :height 260)))
 
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil
                     :font "JetBrains Mono"
                     :weight 'light
-                    :height 130)
+                    :height 260)
 
 (use-package default-text-scale
   :ensure t
@@ -249,7 +279,7 @@
   :load-path  "~/projects/telega.el"
   :commands (telega)
   :config
-  (setq telega-server-libs-prefix "/usr")
+  (setq telega-server-libs-prefix "/usr/local")
   :defer t)
 ;;==========================Chats================================================================
 
@@ -268,19 +298,20 @@
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(ispell-dictionary nil)
+ '(ntlm-compatibility-level 5)
  '(package-selected-packages
-   '(typescript-mode ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
+   '(magit@3 magit exwm-config typescript-mode ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
 ;;==============================================Mail===================================================================
 
 ;; (setq dw/mail-enabled nil)
 
-;; (use-package excorporate
-;;   :ensure t
-;;   :config
-;;   (setq org-agenda-include-diary t)
-;;   (setq excorporate-configuration (quote ("aleksandr.akselrod@sbermegamarket.ru" . "https://10.30.48.65/EWS/Exchange.asmx")))
-;;   (excorporate-diary-enable)
-;;   )
+ (use-package excorporate
+   :ensure t
+   :config
+   (setq org-agenda-include-diary t)
+   (setq excorporate-configuration (quote ("a.akselrod" . "https://ews.tcsbank.ru/EWS/Exchange.asmx")))
+   (excorporate-diary-enable)
+   )
 
 ;; (use-package mu4e
 ;;   :config
@@ -598,8 +629,8 @@
   ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
 
   ;; ;; Set the screen resolution (update this to be the correct resolution for your screen!)
-  ;; (require 'exwm-randr)
-  ;; (exwm-randr-enable)
+  (require 'exwm-randr)
+  (exwm-randr-enable)
   ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
 
   ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "HDMI-1" 4 "DP-3"))
@@ -616,7 +647,9 @@
    (setenv "QT_IM_MODULE" "xim")
    (setenv "XMODIFIERS" "@im=exwm-xim")
    (setenv "CLUTTER_IM_MODULE" "xim")
-  
+   (setenv "GDK_DPI_SCALE" "-1")
+   (setenv "GDK_SCALE" "2")
+   
    (require 'exwm-xim)
    (exwm-xim-enable)
   
@@ -676,10 +709,14 @@
     (exwm/run-in-background "nm-applet")
     (exwm/run-in-background "blueman-applet")
     (exwm/run-in-background "indicator-sound-switcher")
+    (exwm/run-in-background "/opt/Толк/ktalk")
+    (exwm/run-in-background "/opt/TiMe/time-desktop")
+    (exwm/run-in-background "/opt/cisco/anyconnect/bin/vpnui")
     )
   (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
   (exwm-enable)
   )
+
 ;;================================Hugo===================================
 (use-package ox-hugo
   :ensure t)
@@ -694,13 +731,12 @@
   ;;(browse-url-browser-function 'eaf-open-browser)
   :config
   (require 'eaf-pdf-viewer)
-  (require 'eaf-browser)
-  (require 'eaf-org-previewer)
-;;  (require 'eaf-browser)
-;;  (require 'eaf-camera)
 ;;  (defalias 'browse-web #'eaf-open-browser)
   (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
   (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
 ;;  (eaf-bind-key take_photo "p" eaf-camera-keybinding)
   ;;(eaf-bind-key nil "M-q" eaf-browser-keybinding)
   ) ;; unbind, see more in the Wiki
+;;================================Git====================================
+(use-package magit
+  :ensure t)
