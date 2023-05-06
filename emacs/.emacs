@@ -1,3 +1,5 @@
+;; For questions look here https://github.com/daviwil/emacs-from-scratch/blob/75f1d4e08512c49ea073c26058df6d4cca3a0d6b/Desktop.org#panel-with-polybar
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
@@ -6,40 +8,17 @@
 ;;=======================Polybar===================================================
 (defun dw/polybar-exwm-workspace ()
   (pcase exwm-workspace-current-index
-    (0 "")
-    (1 "")
-    (2 "")
-    (3 "")
-    (4 "")))
+    (0 "Main")
+    (1 "Internet")
+    (2 "Video")
+    (3 3)
+    (4 4)))
+
 (defun dw/polybar-exwm-workspace-path ()
   (let ((workspace-path (frame-parameter nil 'bufler-workspace-path-formatted)))
     (if workspace-path
         (substring-no-properties workspace-path)
       "")))
-
-(defun dw/polybar-mail-count (max-count)
-  (if (and dw/mail-enabled dw/mu4e-inbox-query)
-    (let* ((mail-count (shell-command-to-string
-                         (format "mu find --nocolor -n %s \"%s\" | wc -l" max-count dw/mu4e-inbox-query))))
-      (format " %s" (string-trim mail-count)))
-    ""))
-
-(defun dw/telega-normalize-name (chat-name)
-  (let* ((trimmed-name (string-trim-left (string-trim-right chat-name "}") "◀{"))
-         (first-name (nth 0 (split-string trimmed-name " "))))
-    first-name))
-
-(defun dw/propertized-to-polybar (buffer-name)
-  (if-let* ((text (substring-no-properties buffer-name))
-            (fg-face (get-text-property 0 'face buffer-name))
-            (fg-color (face-attribute fg-face :foreground)))
-    (format "%%{F%s}%s%%{F-}" fg-color (dw/telega-normalize-name text))
-    text))
-
-(defun dw/polybar-telegram-chats ()
-  (if (> (length tracking-buffers) 0)
-    (format " %s" (string-join (mapcar 'dw/propertized-to-polybar tracking-buffers) ", "))
-    ""))
 
 (defvar efs/polybar-process nil
   "Holds the process of the running Polybar instance, if any")
@@ -55,6 +34,15 @@
   (interactive)
   (efs/kill-panel)
   (setq efs/polybar-process (start-process-shell-command "polybar" nil "polybar panel")))
+
+(defun efs/send-polybar-hook (module-name hook-index)
+  (start-process-shell-command "polybar-msg" nil (format "polybar-msg hook %s %s" module-name hook-index)))
+
+(defun efs/send-polybar-exwm-workspace ()
+  (efs/send-polybar-hook "exwm-workspace" 1))
+
+;; Update panel indicator when workspace changes
+(add-hook 'exwm-workspace-switch-hook #'efs/send-polybar-exwm-workspace)
 
 ;;=============================== Office ====================================
 (setq efs/vpn-process nil)
@@ -84,7 +72,12 @@
   (efs/kill-time)
   (setq efs/time-process (start-process-shell-command "time" nil "/opt/TiMe/time-desktop")))
 
-;;=============================== Office ====================================
+(defun efs/start-firefox ()
+  (interactive)
+  (pcase exwm-workspace-current-index
+    (0 (start-process-shell-command "firefox-small" "*Messages*" "firefox"))
+    (2 (start-process-shell-command "firefox-large" "*Messages*" "GDK_SCALE=2 firefox"))
+  ))
 
 ;;===============================Development=====================================================
 ;; Company mode
@@ -92,7 +85,11 @@
   :ensure t
   :init
   (setq company-idle-delay 0)
-  (setq company-minimum-prefix-length 1))
+  (setq company-minimum-prefix-length 1)
+  :config
+    (global-set-key (kbd "<C-return>") 'company-complete)
+    (global-company-mode 1)
+)
 
 (use-package flycheck-golangci-lint
 	     :ensure t)
@@ -104,6 +101,45 @@
   (add-hook 'before-save-hook #'lsp-format-buffer t t)
   (add-hook 'before-save-hook #'lsp-organize-imports t t))
 
+;; For details look here https://gitlab.com/skybert/my-little-friends/blob/master/emacs/.emacs
+;; lsp-workspace-folders-* to add/remove folder to/from LSP
+(use-package lsp-java
+  :ensure t
+  :config
+  (setq lsp-java-vmargs
+        (list
+         "-noverify"
+         "-Xmx3G"
+         "-XX:+UseG1GC"
+         "-XX:+UseStringDeduplication"
+         "-Djava.awt.headless=true"
+         )
+        lsp-java-java-path "/usr/lib/jvm/java-19-openjdk-amd64/bin/java"
+        ;; Don't organise imports on save
+        lsp-java-save-action-organize-imports nil
+	)
+  (setq lsp-java-configuration-runtimes '[(:name "JavaSE-19"
+                                                 :path "/usr/lib/jvm/java-19-openjdk-amd64"
+                                                 :default t)])
+  (add-hook 'java-mode-hook 'lsp)) 
+
+;; Man about projectile is https://docs.projectile.mx/projectile/usage.html
+;; projectile-remove-known-project
+(use-package projectile
+  :ensure t
+  :init
+  (projectile-mode +1)
+  :config
+  (setq projectile-project-search-path '("~/projects/"))
+  :bind (:map projectile-mode-map
+              ("s-p" . projectile-command-map)
+              ("C-c p" . projectile-command-map)))
+
+(use-package java-snippets
+  :ensure t)
+
+;; Manual on how to activate LSP features https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/
+;; Another good man about LSP https://develop.spacemacs.org/layers/+tools/lsp/README.html
 (use-package lsp-mode
   :ensure t
   ;; uncomment to enable gopls http debug server
@@ -115,14 +151,26 @@
    (go-mode . yas-minor-mode)
    (python-mode . lsp-deferred)
    (python-mode . yas-minor-mode)
+   (java-mode . lsp-deferred)
+   (java-mode . yas-minor-mode)
+   (lsp-mode . lsp-enable-which-key-integration)
    )
   :config (progn
             ;; use flycheck, not flymake
             (setq lsp-prefer-flymake nil)
+	      (setq gc-cons-threshold 100000000)
+	      (setq read-process-output-max (* 1024 1024)) ;; 1mb
+	      (setq lsp-idle-delay 0.500)
 	    ;;(setq lsp-trace nil)
 	    (setq lsp-print-performance nil)
 	    (setq lsp-log-io nil))
+  :bind
+    (:map lsp-mode-map
+          (("\C-\M-g" . lsp-find-implementation)
+           ("M-RET" . lsp-execute-code-action)))
   )
+
+(use-package which-key :ensure t :config (which-key-mode))
 
 (use-package lsp-ui
   :ensure t)
@@ -131,6 +179,9 @@
   :ensure t)
 
 (use-package use-package-hydra
+  :ensure t)
+
+(use-package hydra
   :ensure t)
 
 ;; DAP
@@ -150,6 +201,9 @@
   :hook
   (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra)))
   )
+
+;; Manual about treemacs is here https://github.com/Alexander-Miller/treemacs
+(use-package lsp-treemacs :ensure t)
 
 (use-package origami
   :ensure t
@@ -265,6 +319,7 @@
 (set-default-coding-systems 'utf-8)
 (server-start)
 (setq inhibit-startup-message t)
+(set-default 'truncate-lines t)
 ;;(setq debug-on-error t)
 ;;==========================Other================================================================
 ;;==========================Chats================================================================
@@ -297,10 +352,13 @@
  '(appt-display-format 'echo)
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
+ '(default-input-method "russian-computer")
+ '(global-company-mode t)
  '(ispell-dictionary nil)
  '(ntlm-compatibility-level 5)
  '(package-selected-packages
-   '(magit@3 magit exwm-config typescript-mode ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go)))
+   '(magit exwm-config dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
+ '(telega-server-libs-prefix "/usr/local"))
 ;;==============================================Mail===================================================================
 
 ;; (setq dw/mail-enabled nil)
@@ -614,7 +672,20 @@
 (setq password-cache t) ; enable password caching
 (setq password-cache-expiry 3600) ; for one hour (time in secs)
 
+(defun efs/configure-window-by-class ()
+  (interactive)
+  (pcase exwm-class-name
+    ("firefox" (exwm-workspace-move-window 1))
+    ("Sol" (exwm-workspace-move-window 3))
+    ("mpv" (exwm-floating-toggle-floating)
+           (exwm-layout-toggle-mode-line))))
 
+(defun efs/exwm-update-class ()
+  (exwm-workspace-rename-buffer exwm-class-name))
+
+(defun efs/exwm-update-title ()
+  (pcase exwm-class-name
+    ("Firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
 
 (use-package exwm
   :ensure t
@@ -624,6 +695,8 @@
 
   ;; ;; When window "class" updates, use it to set the buffer name
    (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
+   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
+   (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
 
   ;; ;; Rebind CapsLock to Ctrl
   ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
@@ -649,6 +722,7 @@
    (setenv "CLUTTER_IM_MODULE" "xim")
    (setenv "GDK_DPI_SCALE" "-1")
    (setenv "GDK_SCALE" "2")
+   (setenv "EDITOR" "emacsclient")
    
    (require 'exwm-xim)
    (exwm-xim-enable)
@@ -731,6 +805,8 @@
   ;;(browse-url-browser-function 'eaf-open-browser)
   :config
   (require 'eaf-pdf-viewer)
+;;  (require 'eaf-browser)
+;;  (require 'eaf-camera)
 ;;  (defalias 'browse-web #'eaf-open-browser)
   (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
   (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
