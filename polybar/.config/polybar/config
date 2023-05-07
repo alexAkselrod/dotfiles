@@ -30,8 +30,8 @@ enable-ipc = true
 ; This only affects scalable fonts
 ; Set this to 0 to let polybar calculate the dpi from the screen size.
 ; dpi = 
-dpi-x = 200
-dpi-y = 200
+dpi-x = 0
+dpi-y = 0
 
 background = ${colors.background}
 foreground = ${colors.foreground}
@@ -141,29 +141,18 @@ click-right = pavucontrol
 
 [module/exwm-workspace]
 type = custom/ipc
-hook-0 = emacsclient -e "(dw/polybar-exwm-workspace)"
+hook-0 = emacsclient -e "(alex/polybar-exwm-workspace)"
 initial = 1
 format-underline = ${colors.underline-1}
 format-padding = 1
 
 [module/exwm]
 type = custom/ipc
-hook-0 = emacsclient -e "(dw/polybar-exwm-workspace)" | sed -e 's/^"//' -e 's/"$//'
+hook-0 = emacsclient -e "(alex/polybar-exwm-workspace)" | sed -e 's/^"//' -e 's/"$//'
 initial = 1
 format-underline = ${colors.underline-1}
 format-background = ${colors.background-alt}
 format-padding = 1
-
-[module/exwm-path]
-type = custom/ipc
-hook-0 = emacsclient -e "(dw/polybar-exwm-workspace-path)" | sed -e 's/^"//' -e 's/"$//'
-format-foreground = #f78c6c
-initial = 1
-
-;;[module/spotify]
-;;type = custom/script
-;;exec = ~/.config/polybar/player-status.sh
-;;interval = 3
 
 [module/mu4e]
 type = custom/ipc

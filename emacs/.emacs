@@ -3,37 +3,14 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
-(setq toggle-truncate-lines t)
-
 ;;=======================Polybar===================================================
-(defun dw/polybar-exwm-workspace ()
+(defun alex/polybar-exwm-workspace ()
   (pcase exwm-workspace-current-index
     (0 "Main")
     (1 "Internet")
     (2 "Video")
     (3 3)
     (4 4)))
-
-(defun dw/polybar-exwm-workspace-path ()
-  (let ((workspace-path (frame-parameter nil 'bufler-workspace-path-formatted)))
-    (if workspace-path
-        (substring-no-properties workspace-path)
-      "")))
-
-(defvar efs/polybar-process nil
-  "Holds the process of the running Polybar instance, if any")
-
-(defun efs/kill-panel ()
-  (interactive)
-  (when efs/polybar-process
-    (ignore-errors
-      (kill-process efs/polybar-process)))
-  (setq efs/polybar-process nil))
-
-(defun efs/start-panel ()
-  (interactive)
-  (efs/kill-panel)
-  (setq efs/polybar-process (start-process-shell-command "polybar" nil "polybar panel")))
 
 (defun efs/send-polybar-hook (module-name hook-index)
   (start-process-shell-command "polybar-msg" nil (format "polybar-msg hook %s %s" module-name hook-index)))
@@ -44,40 +21,81 @@
 ;; Update panel indicator when workspace changes
 (add-hook 'exwm-workspace-switch-hook #'efs/send-polybar-exwm-workspace)
 
-;;=============================== Office ====================================
-(setq efs/vpn-process nil)
-(setq efs/time-process nil)
-(defun efs/kill-vpn ()
-  (interactive)
-  (when efs/vpn-process
-    (ignore-errors
-      (kill-process efs/vpn-process)))
-  (setq efs/vpn-process nil))
+;;=============================== Applications ====================================
+(setq processes '((vpn 'nil "/opt/cisco/anyconnect/bin/vpnui") (browser 'nil "opera") (time 'nil "/opt/TiMe/time-desktop") (panel 'mil "polybar panel") (ktalk 'mil "/opt/Толк/ktalk")))
 
-(defun efs/start-vpn ()
-  (interactive)
-    (efs/kill-vpn)
-;;  (exwm/run-in-background "/opt/cisco/anyconnect/bin/vpnui"))
-  (setq efs/time-process (start-process-shell-command "vpn" nil "/opt/cisco/anyconnect/bin/vpnui")))
+(defun app/kill-process (name)
+  (setq pid (nth 1 (assq name processes)))
+   (when pid
+     (ignore-errors
+       (kill-process pid)))
+   (setf pid nil)
+  )
 
-(defun efs/kill-time ()
-  (interactive)
-  (when efs/time-process
-    (ignore-errors
-      (kill-process efs/time-process)))
-  (setq efs/time-process nil))
+(defun app/start-process (name)
+  (app/kill-process name)
+  (setq command (nth 2 (assq name processes)))
+  (setq pid (start-process-shell-command command nil command))
+  (setf (nth 1 (assq name processes)) pid)
+  )
 
-(defun efs/start-time ()
+(defun app/start-browser ()
   (interactive)
-  (efs/kill-time)
-  (setq efs/time-process (start-process-shell-command "time" nil "/opt/TiMe/time-desktop")))
+  (app/kill-process 'browser)
+  (app/start-process 'browser)
+  )
 
-(defun efs/start-firefox ()
+(defun app/start-vpn ()
   (interactive)
-  (pcase exwm-workspace-current-index
-    (0 (start-process-shell-command "firefox-small" "*Messages*" "firefox"))
-    (2 (start-process-shell-command "firefox-large" "*Messages*" "GDK_SCALE=2 firefox"))
-  ))
+  (app/kill-process 'vpn)
+  (app/start-process 'vpn)
+  )
+
+(defun app/start-time ()
+  (interactive)
+  (app/kill-process 'time)
+  (app/start-process 'time)
+  )
+
+(defun app/start-panel ()
+  (interactive)
+  (app/kill-process 'panel)
+  (app/start-process 'panel)
+  )
+
+(defun app/start-ktalk ()
+  (interactive)
+  (app/kill-process 'ktalk)
+  (app/start-process 'ktalk)
+  )
+
+(defun app/set-font-size (size)
+  (print size)
+  (set-face-attribute 'default nil
+		      :font "JetBrains Mono"
+		      :weight 'light
+		      :height size)
+  )
+
+(defun app/detect-scale ()
+  (interactive)
+  (setenv "GDK_SCALE" "2")
+  (app/set-font-size 260)
+  (dolist (el (display-monitor-attributes-list))    
+    (setq d-name (cdr (assq 'name el)))
+    (when (not (string= d-name "eDP-1"))
+      (setenv "GDK_SCALE" "1")
+      (app/set-font-size 130)
+      )
+    )
+  )
+
+(defun apps/rerun-gtk-apps ()
+  (interactive)
+  (dolist (element '(browser time ktalk))
+    (app/start-process element)
+    )
+  )
 
 ;;===============================Development=====================================================
 ;; Company mode
@@ -233,29 +251,26 @@
 (setq dw/is-termux
       (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
 
-(unless dw/is-termux
-  (scroll-bar-mode -1)        ; Disable visible scrollbar
-  (tool-bar-mode -1)          ; Disable the toolbar
-  (tooltip-mode -1)           ; Disable tooltips
-  (set-fringe-mode 10))       ; Give some breathing room
-
+(scroll-bar-mode -1)        ; Disable visible scrollbar
+(tool-bar-mode -1)          ; Disable the toolbar
+(tooltip-mode -1)           ; Disable tooltips
+(set-fringe-mode 10)       ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
 
 ;; Set up the visible bell
 (setq visible-bell t)
 
-(unless dw/is-termux
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-  (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-  (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-  (setq scroll-step 1) ;; keyboard scroll one line at a time
-  (setq use-dialog-box nil)) ;; Disable dialog boxes since they weren't working in Mac OSX
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-step 1) ;; keyboard scroll one line at a time
+(setq use-dialog-box nil) ;; Disable dialog boxes since they weren't working in Mac OSX
 
-(unless dw/is-termux
-  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
-  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
-  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-  (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+
+(set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+(add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 (column-number-mode)
 
@@ -283,7 +298,7 @@
    (set-face-attribute 'default nil
                        :font "JetBrains Mono"
                        :weight 'light
-                       :height 260))
+                       :height 130))
   ('darwin (set-face-attribute 'default nil :font "Fira Mono" :height 260)))
 
 ;; Set the fixed pitch face
@@ -353,6 +368,7 @@
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(default-input-method "russian-computer")
+ '(exwm-randr-screen-change-hook '(dw/on-screen-changed))
  '(global-company-mode t)
  '(ispell-dictionary nil)
  '(ntlm-compatibility-level 5)
@@ -662,7 +678,7 @@
  (setq display-time-day-and-date t)
  (display-time-mode 1)
 
- (defun efs/exwm-update-class ()
+ (defun alex/exwm-update-class ()
    (exwm-workspace-rename-buffer exwm-class-name))
 
 (require 'em-tramp)
@@ -672,7 +688,7 @@
 (setq password-cache t) ; enable password caching
 (setq password-cache-expiry 3600) ; for one hour (time in secs)
 
-(defun efs/configure-window-by-class ()
+(defun alex/configure-window-by-class ()
   (interactive)
   (pcase exwm-class-name
     ("firefox" (exwm-workspace-move-window 1))
@@ -680,10 +696,10 @@
     ("mpv" (exwm-floating-toggle-floating)
            (exwm-layout-toggle-mode-line))))
 
-(defun efs/exwm-update-class ()
+(defun alex/exwm-update-class ()
   (exwm-workspace-rename-buffer exwm-class-name))
 
-(defun efs/exwm-update-title ()
+(defun alex/exwm-update-title ()
   (pcase exwm-class-name
     ("Firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
 
@@ -694,16 +710,24 @@
    (setq exwm-workspace-number 5)
 
   ;; ;; When window "class" updates, use it to set the buffer name
-   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
-   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
-   (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
+   (add-hook 'exwm-update-class-hook #'alex/exwm-update-class)
+   (add-hook 'exwm-update-title-hook #'alex/exwm-update-title)
+   (add-hook 'exwm-manage-finish-hook #'alex/configure-window-by-class)
 
   ;; ;; Rebind CapsLock to Ctrl
   ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
 
   ;; ;; Set the screen resolution (update this to be the correct resolution for your screen!)
-  (require 'exwm-randr)
-  (exwm-randr-enable)
+   (require 'exwm-randr)
+   (exwm-randr-enable)
+
+   (defun dw/on-screen-changed ()
+     (interactive)
+     (app/detect-scale)
+     (apps/rerun-gtk-apps)
+     )
+
+   (add-hook 'exwm-randr-screen-change-hook 'dw/on-screen-changed)
   ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
 
   ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "HDMI-1" 4 "DP-3"))
@@ -721,15 +745,14 @@
    (setenv "XMODIFIERS" "@im=exwm-xim")
    (setenv "CLUTTER_IM_MODULE" "xim")
    (setenv "GDK_DPI_SCALE" "-1")
-   (setenv "GDK_SCALE" "2")
    (setenv "EDITOR" "emacsclient")
    
    (require 'exwm-xim)
    (exwm-xim-enable)
   
-  (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
+   (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
   ;; These keys should always pass through to Emacs
-  (setq exwm-input-prefix-keys
+   (setq exwm-input-prefix-keys
     '(?\C-x
       ?\C-u
       ?\C-h
@@ -741,12 +764,12 @@
       ?\C-\M-j  ;; Buffer list
       ?\C-\M-n  ;; Next workspace
       ?\C-\;))  ;; Ctrl+Space
+   
+   ;; Ctrl+Q will enable the next key to be sent directly
+   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
 
-  ;; Ctrl+Q will enable the next key to be sent directly
-  (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
-
-  ;; ;; Set up global key bindings.  These always work, no matter the input state!
-  ;; ;; Keep in mind that changing this list after EXWM initializes has no effect.
+   ;; ;; Set up global key bindings.  These always work, no matter the input state!
+   ;; ;; Keep in mind that changing this list after EXWM initializes has no effect.
    (setq exwm-input-global-keys
          `(
            ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
@@ -778,18 +801,17 @@
      (let ((command-parts (split-string command "[ ]+")))
        (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
-  (defun dw/exwm-init-hook ()
-    (efs/start-panel)
-    (exwm/run-in-background "nm-applet")
-    (exwm/run-in-background "blueman-applet")
-    (exwm/run-in-background "indicator-sound-switcher")
-    (exwm/run-in-background "/opt/Толк/ktalk")
-    (exwm/run-in-background "/opt/TiMe/time-desktop")
-    (exwm/run-in-background "/opt/cisco/anyconnect/bin/vpnui")
-    )
-  (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
-  (exwm-enable)
-  )
+   (defun dw/exwm-init-hook ()
+     (app/start-panel)
+     (exwm/run-in-background "nm-applet")
+     (exwm/run-in-background "blueman-applet")
+     (exwm/run-in-background "indicator-sound-switcher")
+     
+     (dw/on-screen-changed)
+     )
+   (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
+   (exwm-enable)
+   )
 
 ;;================================Hugo===================================
 (use-package ox-hugo
