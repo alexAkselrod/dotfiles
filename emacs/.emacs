@@ -22,7 +22,7 @@
 (add-hook 'exwm-workspace-switch-hook #'efs/send-polybar-exwm-workspace)
 
 ;;=============================== Applications ====================================
-(setq processes '((vpn 'nil "/opt/cisco/anyconnect/bin/vpnui") (browser 'nil "opera") (time 'nil "/opt/TiMe/time-desktop") (panel 'mil "polybar panel") (ktalk 'mil "/opt/Толк/ktalk")))
+(setq processes '((vpn 'nil "/opt/cisco/anyconnect/bin/vpnui") (browser 'nil "opera") (time 'nil "/opt/TiMe/time-desktop") (panel 'nil "polybar panel") (ktalk 'nil "/opt/Толк/ktalk") (bluetooth 'nil "blueman-manager")))
 
 (defun app/kill-process (name)
   (setq pid (nth 1 (assq name processes)))
@@ -37,6 +37,12 @@
   (setq command (nth 2 (assq name processes)))
   (setq pid (start-process-shell-command command nil command))
   (setf (nth 1 (assq name processes)) pid)
+  )
+
+(defun app/start-bluetooth ()
+  (interactive)
+  (app/kill-process 'bluetooth)
+  (app/start-process 'bluetooth)
   )
 
 (defun app/start-browser ()
@@ -90,11 +96,28 @@
     )
   )
 
-(defun apps/rerun-gtk-apps ()
+(defun app/rerun-gtk-apps ()
   (interactive)
-  (dolist (element '(browser time ktalk))
+  (dolist (element '(browser time ktalk bluetooth))
     (app/start-process element)
     )
+  )
+;;=============================== Displays =====================================================
+
+(defun disp/enable-home ()
+  (interactive)
+  (call-process-shell-command "xrandr -d :0 --output DP-1 --auto --output eDP-1 --off")
+  (setenv "GDK_SCALE" "1")
+  (app/set-font-size 130)
+  (app/rerun-gtk-apps)
+  )
+
+(defun disp/enable-mobile ()
+  (interactive)
+  (call-process-shell-command "autorandr --change mobile")
+  (setenv "GDK_SCALE" "2")
+  (app/set-font-size 260)
+  (app/rerun-gtk-apps)
   )
 
 ;;===============================Development=====================================================
@@ -245,7 +268,6 @@
    ("k" . origami-previous-fold)
    ("j" . origami-forward-fold)
    ("x" . origami-reset)))
-;;===============================Development=====================================================
 ;;===============================UI==============================================================
 (require 'subr-x)
 (setq dw/is-termux
@@ -289,17 +311,14 @@
 (use-package doom-themes
   :ensure t)
 
-(unless dw/is-termux
-  (load-theme 'doom-palenight t)
-  (doom-themes-visual-bell-config))
 
-(pcase system-type
-  ((or 'gnu/linux 'windows-nt 'cygwin)
-   (set-face-attribute 'default nil
-                       :font "JetBrains Mono"
-                       :weight 'light
-                       :height 130))
-  ('darwin (set-face-attribute 'default nil :font "Fira Mono" :height 260)))
+(load-theme 'doom-palenight t)
+(doom-themes-visual-bell-config)
+
+(set-face-attribute 'default nil
+                    :font "JetBrains Mono"
+                    :weight 'light
+                    :height 130)
 
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil
@@ -312,8 +331,6 @@
   :config
   (default-text-scale-mode)
   )
-
-;;===============================UI==============================================================
 ;;==========================Auto-Save============================================================
 
 (use-package diminish
@@ -329,24 +346,19 @@
 
 (setq global-auto-revert-non-file-buffers t)
 (global-auto-revert-mode 1)
-;;==========================Auto-Save============================================================
 ;;==========================Other================================================================
 (set-default-coding-systems 'utf-8)
 (server-start)
 (setq inhibit-startup-message t)
 (set-default 'truncate-lines t)
-;;(setq debug-on-error t)
-;;==========================Other================================================================
+(setq debug-on-error t)
 ;;==========================Chats================================================================
-
 (use-package visual-fill-column
   :ensure t)
 (use-package rainbow-identifiers
   :ensure t)
-
 (use-package telega
   :ensure t
-  :load-path  "~/projects/telega.el"
   :commands (telega)
   :config
   (setq telega-server-libs-prefix "/usr/local")
@@ -368,7 +380,7 @@
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(default-input-method "russian-computer")
- '(exwm-randr-screen-change-hook '(dw/on-screen-changed))
+ '(exwm-randr-screen-change-hook nil)
  '(global-company-mode t)
  '(ispell-dictionary nil)
  '(ntlm-compatibility-level 5)
@@ -441,7 +453,7 @@
   (global-set-key "\C-s" 'swiper)
   (global-set-key (kbd "C-c C-r") 'ivy-resume)
   (global-set-key (kbd "<f6>") 'ivy-resume)
-;;  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key (kbd "M-x") 'counsel-M-x)
   (global-set-key (kbd "C-x C-f") 'counsel-find-file)
   (global-set-key (kbd "<f1> f") 'counsel-describe-function)
   (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
@@ -456,19 +468,19 @@
   (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
   (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history))
 ;;=======================================m4u alerts====================================================================
-(use-package mu4e-alert
-  :ensure t
-  :hook
-  ((after-init . mu4e-alert-enable-mode-line-display))
-  :after mu4e
-  :config
-  ;; Show unread emails from all inboxes
-  ;;(setq mu4e-alert-interesting-mail-query dw/mu4e-inbox-query)
+;; (use-package mu4e-alert
+;;   :ensure t
+;;   :hook
+;;   ((after-init . mu4e-alert-enable-mode-line-display))
+;;   :after mu4e
+;;   :config
+;;   ;; Show unread emails from all inboxes
+;;   ;;(setq mu4e-alert-interesting-mail-query dw/mu4e-inbox-query)
 
-    ;; Show notifications for mails already notified
-  (setq mu4e-alert-notify-repeated-mails nil)
+;;     ;; Show notifications for mails already notified
+;;   (setq mu4e-alert-notify-repeated-mails nil)
 
-  (mu4e-alert-enable-notifications))
+;;   (mu4e-alert-enable-notifications))
 ;;======================================OrgMode=======================================================================
 (use-package org-alert
   :ensure t
@@ -500,6 +512,7 @@
 (setq org-directory
       "~/work")
 (global-set-key (kbd "C-c a") 'org-agenda)
+
 (defun dw/org-path (path)
   (expand-file-name path org-directory))
 
@@ -701,7 +714,7 @@
 
 (defun alex/exwm-update-title ()
   (pcase exwm-class-name
-    ("Firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
+    ("Opera" (exwm-workspace-rename-buffer (format "Opera: %s" exwm-title)))))
 
 (use-package exwm
   :ensure t
@@ -724,14 +737,9 @@
    (defun dw/on-screen-changed ()
      (interactive)
      (app/detect-scale)
-     (apps/rerun-gtk-apps)
+     (app/rerun-gtk-apps)
      )
 
-   (add-hook 'exwm-randr-screen-change-hook 'dw/on-screen-changed)
-  ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
-
-  ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "HDMI-1" 4 "DP-3"))
-  ;; (setq exwm-workspace-warp-cursor t)
    (setq mouse-autoselect-window t
    	focus-follows-mouse t)
   
