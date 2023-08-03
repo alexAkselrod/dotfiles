@@ -3,6 +3,8 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
+
+
 ;;=======================Polybar===================================================
 (defun alex/polybar-exwm-workspace ()
   (pcase exwm-workspace-current-index
@@ -11,6 +13,7 @@
     (2 "Video")
     (3 3)
     (4 4)))
+
 
 (defun efs/send-polybar-hook (module-name hook-index)
   (start-process-shell-command "polybar-msg" nil (format "polybar-msg hook %s %s" module-name hook-index)))
@@ -76,7 +79,7 @@
   )
 
 (defun app/set-font-size (size)
-  (print size)
+  (setq app-font-size size)
   (set-face-attribute 'default nil
 		      :font "JetBrains Mono"
 		      :weight 'light
@@ -98,7 +101,7 @@
 
 (defun app/rerun-gtk-apps ()
   (interactive)
-  (dolist (element '(browser time ktalk bluetooth))
+  (dolist (element '(browser time ktalk bluetooth vpn))
     (app/start-process element)
     )
   )
@@ -114,7 +117,7 @@
 
 (defun disp/enable-mobile ()
   (interactive)
-  (call-process-shell-command "autorandr --change mobile")
+  (call-process-shell-command "xrandr -d :0 --output DP-1 --off --output eDP-1 --auto")
   (setenv "GDK_SCALE" "2")
   (app/set-font-size 260)
   (app/rerun-gtk-apps)
@@ -385,7 +388,7 @@
  '(ispell-dictionary nil)
  '(ntlm-compatibility-level 5)
  '(package-selected-packages
-   '(magit exwm-config dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
+   '(ox-beamer org-beamer emms-setup org-present magit exwm-config dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
  '(telega-server-libs-prefix "/usr/local"))
 ;;==============================================Mail===================================================================
 
@@ -491,6 +494,8 @@
       org-alert-notify-after-event-cutoff 10)
   (org-alert-enable))
 
+(use-package ox-beamer)
+
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((python . t)))
@@ -581,6 +586,16 @@
 ;;================================Agenda=================================
 (add-hook 'org-timer-set-hook #'org-clock-in)
 ;;==============================Templates================================
+
+(global-set-key (kbd "C-x <print>")
+  (lambda ()
+    (interactive)
+    (let ((path (concat "~/Documents/Screenshot-" (format-time-string "%Y-%m-%d,%H:%M:%S") ".png")))
+      (start-process-shell-command
+       "import" nil (concat "import -window root " path))
+    (message (concat "Screenshot saved to " path)))
+    ))
+
 (global-set-key (kbd "C-c c") 'org-capture)
 (defun dw/get-todays-journal-file-name ()
   "Gets the journal file name for today's date"
@@ -761,17 +776,17 @@
    (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
   ;; These keys should always pass through to Emacs
    (setq exwm-input-prefix-keys
-    '(?\C-x
-      ?\C-u
-      ?\C-h
-      ?\C-\\
-      ?\M-x
-      ?\M-`
-      ?\M-&
-      ?\M-:
-      ?\C-\M-j  ;; Buffer list
-      ?\C-\M-n  ;; Next workspace
-      ?\C-\;))  ;; Ctrl+Space
+	 '(?\C-x	  
+	   ?\C-u
+	   ?\C-h
+	   ?\C-\\
+	   ?\M-x
+	   ?\M-`
+	   ?\M-&
+	   ?\M-:
+	   ?\C-\M-j  ;; Buffer list
+	   ?\C-\M-n  ;; Next workspace
+	   ?\C-\;))  ;; Ctrl+Space
    
    ;; Ctrl+Q will enable the next key to be sent directly
    (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
@@ -811,6 +826,7 @@
 
    (defun dw/exwm-init-hook ()
      (app/start-panel)
+     (exwm/run-in-background "/home/alex/auto-rotate.sh")
      (exwm/run-in-background "nm-applet")
      (exwm/run-in-background "blueman-applet")
      (exwm/run-in-background "indicator-sound-switcher")
@@ -825,24 +841,107 @@
 (use-package ox-hugo
   :ensure t)
 (setq org-hugo-base-dir "/home/alex/work/org-share")
-;;================================EAF====================================
-(use-package eaf
-  :load-path "~/.emacs.d/site-lisp/emacs-application-framework"
-;;  :custom
-					; See https://github.com/emacs-eaf/emacs-application-framework/wiki/Customization
-  ;;(eaf-browser-continue-where-left-off t)
-  ;;(eaf-browser-enable-adblocker t)
-  ;;(browse-url-browser-function 'eaf-open-browser)
-  :config
-  (require 'eaf-pdf-viewer)
-;;  (require 'eaf-browser)
-;;  (require 'eaf-camera)
-;;  (defalias 'browse-web #'eaf-open-browser)
-  (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
-  (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
-;;  (eaf-bind-key take_photo "p" eaf-camera-keybinding)
-  ;;(eaf-bind-key nil "M-q" eaf-browser-keybinding)
-  ) ;; unbind, see more in the Wiki
 ;;================================Git====================================
 (use-package magit
   :ensure t)
+
+;;================================Org-Present===================================
+
+;; Key	Command	Description
+;; <left>	org-present-prev	Move to the previous slide
+;; <right>	org-present-next	Move to the next slide
+;; C-c <	org-present-beginning	Move to the first slide
+;; C-c >	org-present-end	Move to the last slide
+;; C-c C-q	org-present-quit	Exit the presentation and reset buffer
+;; C-c C-r	org-present-read-only	Make the slides read-only
+;; C-c C-w	org-present-read-write	Make the slides writable
+(use-package org-present
+  :init
+  (setq org-present-text-scale 3)
+  :hook ((org-present-mode . (lambda ()
+			       (org-present-big)
+			       (org-display-inline-images)
+			       (org-present-hide-cursor)
+			       (visual-line-mode 1)))
+	 
+	 (org-present-mode-quit . (lambda ()
+				    (org-present-small)
+				    (org-remove-inline-images)
+				    (org-present-show-cursor)
+				    (visual-line-mode 0))))
+  :ensure t)
+
+;; (set-face-attribute 'default nil :font "JetBrains Mono" :weight 'light :height )
+;; (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono" :weight 'light :height app-font-size)
+;; (set-face-attribute 'variable-pitch nil :font "JetBrains Mono" :weight 'light :height 1.3)
+
+
+;; (defun my/org-present-start ()
+;;   ;; Center the presentation and wrap lines
+;;   (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+;;                                    (header-line (:height 4.0) variable-pitch)
+;;                                    (org-document-title (:height 1.75) org-document-title)
+;;                                    (org-code (:height 1.55) org-code)
+;;                                    (org-verbatim (:height 1.55) org-verbatim)
+;;                                    (org-block (:height 1.25) org-block)
+;;                                    (org-block-begin-line (:height 0.7) org-block)))
+;;   (setq header-line-format " ")
+;;   (visual-fill-column-mode 0)
+;;   (visual-line-mode 1))
+
+;; (defun my/org-present-end ()
+;;   ;; Stop centering the document
+;;   (setq-local face-remapping-alist '((default variable-pitch default)))
+;;   (setq header-line-format nil)
+;;   (visual-fill-column-mode 0)
+;;   (visual-line-mode 0))
+
+;; ;; Register hooks with org-present
+
+;; (add-hook 'org-present-mode-hook 'my/org-present-start)
+;; (add-hook 'org-present-mode-quit-hook 'my/org-present-end)
+
+;; (setq visual-fill-column-width 1000
+;;       visual-fill-column-center-text t)
+;; ;; Hide emphasis markers on formatted text
+;; (setq org-hide-emphasis-markers t)
+
+;; Resize Org headings
+(dolist (face '(
+		(org-level-1 . 1.5)
+                (org-level-2 . 1.2)
+                (org-level-3 . 1.0)
+                (org-level-4 . 1.0)
+                (org-level-5 . 1.0)
+                (org-level-6 . 1.0)
+                (org-level-7 . 1.0)
+                (org-level-8 . 1.0)))
+   (set-face-attribute (car face) nil :font "JetBrains Mono" :weight 'medium :height (cdr face)))
+
+;; ;; Make the document title a bit bigger
+;; (set-face-attribute 'org-document-title nil :font "Iosevka Aile" :weight 'bold :height 1.3)
+
+;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+;;(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+;;(set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+;;(set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+;;(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+;;(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+;;(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+;;(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+;;(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+
+;;========================================== EMMS ====================================================
+;; https://www.maketecheasier.com/use-emacs-to-play-music-with-emms/
+(use-package emms-setup
+  :ensure nil
+  :init
+  (add-hook 'emms-player-started-hook 'emms-show)
+  :config
+  (setq emms-show-format "Playing: %s")
+  (emms-all)
+  (emms-default-players)
+  (setq emms-source-file-default-directory "~/disk/")
+  )
+(use-package emms :ensure t)
