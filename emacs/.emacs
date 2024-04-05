@@ -5,6 +5,16 @@
 (package-initialize)
 (setq toggle-truncate-lines t)
 
+(use-package go-mode
+  :ensure t
+  :config
+  (setenv "GOROOT" "/usr/local/go")
+  (setenv "GOPATH" "/home/alex/.go")
+  (setenv "PATH" (concat (getenv "PATH") ":/usr/local/go/bin:/home/alex/.go/bin"))
+  (setq xref-auto-jump-to-first-xref t)
+  (setq xref-auto-jump-to-first-definition t)
+  )
+
 ;;=======================Polybar===================================================
 (defun dw/polybar-exwm-workspace ()
   (pcase exwm-workspace-current-index
@@ -306,7 +316,7 @@
   :load-path  "~/projects/telega.el"
   :commands (telega)
   :config
-  (setq telega-server-libs-prefix "/usr")
+  (setq telega-server-libs-prefix "/usr/local")
   :defer t)
 ;;==========================Chats================================================================
 
@@ -328,7 +338,7 @@
  '(global-company-mode t)
  '(ispell-dictionary nil)
  '(package-selected-packages
-   '(dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
+   '(w3m dired-rsync dumb-jump go-mode dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
  '(telega-server-libs-prefix "/usr/local"))
 ;;==============================================Mail===================================================================
 
@@ -576,6 +586,7 @@
          :tree-type week
          :clock-in :clock-resume
          :empty-lines 1)))
+(setq org-confirm-babel-evaluate nil)
 ;;==============================Templates================================
 ;;=============================Russian Keyboard==========================
 (defun do-reverse-input-method (input-metod)
@@ -760,21 +771,17 @@
 (use-package ox-hugo
   :ensure t)
 (setq org-hugo-base-dir "/home/alex/work/org-share")
-;;================================EAF====================================
-(use-package eaf
-  :load-path "~/.emacs.d/site-lisp/emacs-application-framework"
-;;  :custom
-					; See https://github.com/emacs-eaf/emacs-application-framework/wiki/Customization
-  ;;(eaf-browser-continue-where-left-off t)
-  ;;(eaf-browser-enable-adblocker t)
-  ;;(browse-url-browser-function 'eaf-open-browser)
+
+
+(use-package dired-rsync
+  :ensure t
+  :bind (:map dired-mode-map
+              ("C-c C-r" . dired-rsync)))
+
+(use-package w3m :ensure t
   :config
-  (require 'eaf-pdf-viewer)
-;;  (require 'eaf-browser)
-;;  (require 'eaf-camera)
-;;  (defalias 'browse-web #'eaf-open-browser)
-  (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
-  (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
-;;  (eaf-bind-key take_photo "p" eaf-camera-keybinding)
-  ;;(eaf-bind-key nil "M-q" eaf-browser-keybinding)
-  ) ;; unbind, see more in the Wiki
+  (setq browse-url-browser-function 'w3m-browse-url)
+  (autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
+  ;; optional keyboard short-cut
+  (global-set-key "\C-xm" 'browse-url-at-point)
+)
