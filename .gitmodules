@@ -1,3 +1,6 @@
 [submodule "emacs/.emacs.d/site-lisp/emacs-application-framework"]
 	path = emacs/.emacs.d/site-lisp/emacs-application-framework
 	url = https://github.com/emacs-eaf/emacs-application-framework.git
+[submodule "emacs/.emacs.d/el-get/el-get"]
+	path = emacs/.emacs.d/el-get/el-get
+	url = https://github.com/dimitri/el-get.git

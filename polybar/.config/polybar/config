@@ -20,11 +20,18 @@ underline-1 = #c792ea
 
 [bar/panel]
 width = 100%
-height = 25
+height = 50
 offset-x = 0
 offset-y = 0
 fixed-center = true
 enable-ipc = true
+
+; Set a DPI values used when rendering text
+; This only affects scalable fonts
+; Set this to 0 to let polybar calculate the dpi from the screen size.
+; dpi = 
+dpi-x = 0
+dpi-y = 0
 
 background = ${colors.background}
 foreground = ${colors.foreground}
@@ -47,8 +54,8 @@ font-2 = "Material Icons:size=14;5"
 font-3 = "Fira Mono:size=14;-3"
 
 modules-left = cpu temperature exwm-workspace
-modules-right = backlight-acpi wireless-network battery date pulseaudio
-
+modules-right = backlight-acpi wireless-network battery pulseaudio
+modules-center = date
 tray-position = right
 tray-padding = 2
 tray-maxsize = 28
@@ -134,29 +141,18 @@ click-right = pavucontrol
 
 [module/exwm-workspace]
 type = custom/ipc
-hook-0 = emacsclient -e "(dw/polybar-exwm-workspace)"
+hook-0 = emacsclient -e "(alex/polybar-exwm-workspace)"
 initial = 1
 format-underline = ${colors.underline-1}
 format-padding = 1
 
 [module/exwm]
 type = custom/ipc
-hook-0 = emacsclient -e "(dw/polybar-exwm-workspace)" | sed -e 's/^"//' -e 's/"$//'
+hook-0 = emacsclient -e "(alex/polybar-exwm-workspace)" | sed -e 's/^"//' -e 's/"$//'
 initial = 1
 format-underline = ${colors.underline-1}
 format-background = ${colors.background-alt}
 format-padding = 1
-
-[module/exwm-path]
-type = custom/ipc
-hook-0 = emacsclient -e "(dw/polybar-exwm-workspace-path)" | sed -e 's/^"//' -e 's/"$//'
-format-foreground = #f78c6c
-initial = 1
-
-;;[module/spotify]
-;;type = custom/script
-;;exec = ~/.config/polybar/player-status.sh
-;;interval = 3
 
 [module/mu4e]
 type = custom/ipc

@@ -1,9 +1,10 @@
 ;; For questions look here https://github.com/daviwil/emacs-from-scratch/blob/75f1d4e08512c49ea073c26058df6d4cca3a0d6b/Desktop.org#panel-with-polybar
+(add-to-list 'image-types 'svg)
+(menu-bar-mode t)
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
-(setq toggle-truncate-lines t)
 
 (use-package go-mode
   :ensure t
@@ -16,7 +17,7 @@
   )
 
 ;;=======================Polybar===================================================
-(defun dw/polybar-exwm-workspace ()
+(defun alex/polybar-exwm-workspace ()
   (pcase exwm-workspace-current-index
     (0 "Main")
     (1 "Internet")
@@ -24,33 +25,6 @@
     (3 3)
     (4 4)))
 
-(defun dw/polybar-exwm-workspace-path ()
-  (let ((workspace-path (frame-parameter nil 'bufler-workspace-path-formatted)))
-    (if workspace-path
-        (substring-no-properties workspace-path)
-      "")))
-
-(defvar efs/polybar-process nil
-  "Holds the process of the running Polybar instance, if any")
-
-(defun efs/kill-panel ()
-  (interactive)
-  (when efs/polybar-process
-    (ignore-errors
-      (kill-process efs/polybar-process)))
-  (setq efs/polybar-process nil))
-
-(defun efs/start-panel ()
-  (interactive)
-  (efs/kill-panel)
-  (setq efs/polybar-process (start-process-shell-command "polybar" nil "polybar panel")))
-
-(defun efs/start-firefox ()
-  (interactive)
-  (pcase exwm-workspace-current-index
-    (0 (start-process-shell-command "firefox-small" "*Messages*" "firefox"))
-    (2 (start-process-shell-command "firefox-large" "*Messages*" "GDK_SCALE=2 firefox"))
-  ))
 
 (defun efs/send-polybar-hook (module-name hook-index)
   (start-process-shell-command "polybar-msg" nil (format "polybar-msg hook %s %s" module-name hook-index)))
@@ -61,6 +35,105 @@
 ;; Update panel indicator when workspace changes
 (add-hook 'exwm-workspace-switch-hook #'efs/send-polybar-exwm-workspace)
 
+;;=============================== Applications ====================================
+(setq processes '((vpn 'nil "/opt/cisco/anyconnect/bin/vpnui") (browser 'nil "opera") (time 'nil "/opt/TiMe/time-desktop") (panel 'nil "polybar panel") (ktalk 'nil "/opt/Толк/ktalk") (bluetooth 'nil "blueman-manager")))
+
+(defun app/kill-process (name)
+  (setq pid (nth 1 (assq name processes)))
+   (when pid
+     (ignore-errors
+       (kill-process pid)))
+   (setf pid nil)
+  )
+
+(defun app/start-process (name)
+  (app/kill-process name)
+  (setq command (nth 2 (assq name processes)))
+  (setq pid (start-process-shell-command command nil command))
+  (setf (nth 1 (assq name processes)) pid)
+  )
+
+(defun app/start-bluetooth ()
+  (interactive)
+  (app/kill-process 'bluetooth)
+  (app/start-process 'bluetooth)
+  )
+
+(defun app/start-browser ()
+  (interactive)
+  (app/kill-process 'browser)
+  (app/start-process 'browser)
+  )
+
+(defun app/start-vpn ()
+  (interactive)
+  (app/kill-process 'vpn)
+  (app/start-process 'vpn)
+  )
+
+(defun app/start-time ()
+  (interactive)
+  (app/kill-process 'time)
+  (app/start-process 'time)
+  )
+
+(defun app/start-panel ()
+  (interactive)
+  (app/kill-process 'panel)
+  (app/start-process 'panel)
+  )
+
+(defun app/start-ktalk ()
+  (interactive)
+  (app/kill-process 'ktalk)
+  (app/start-process 'ktalk)
+  )
+
+(defun app/set-font-size (size)
+  (setq app-font-size size)
+  (set-face-attribute 'default nil
+		      :font "JetBrains Mono"
+		      :weight 'light
+		      :height size)
+  )
+
+(defun app/detect-scale ()
+  (interactive)
+  (setenv "GDK_SCALE" "2")
+  (app/set-font-size 260)
+  (dolist (el (display-monitor-attributes-list))    
+    (setq d-name (cdr (assq 'name el)))
+    (when (not (string= d-name "eDP-1"))
+      (setenv "GDK_SCALE" "1")
+      (app/set-font-size 130)
+      )
+    )
+  )
+
+(defun app/rerun-gtk-apps ()
+  (interactive)
+  (dolist (element '(browser time ktalk bluetooth vpn))
+    (app/start-process element)
+    )
+  )
+;;=============================== Displays =====================================================
+
+(defun disp/enable-home ()
+  (interactive)
+  (call-process-shell-command "xrandr -d :0 --output DP-1 --auto --output eDP-1 --off")
+  (setenv "GDK_SCALE" "1")
+  (app/set-font-size 130)
+  (app/rerun-gtk-apps)
+  )
+
+(defun disp/enable-mobile ()
+  (interactive)
+  (call-process-shell-command "xrandr -d :0 --output DP-1 --off --output eDP-1 --auto")
+  (setenv "GDK_SCALE" "2")
+  (app/set-font-size 260)
+  (app/rerun-gtk-apps)
+  )
+
 ;;===============================Development=====================================================
 ;; Company mode
 (use-package company
@@ -70,7 +143,6 @@
   (setq company-minimum-prefix-length 1)
   :config
     (global-set-key (kbd "<C-return>") 'company-complete)
-    (global-company-mode 1)
 )
 
 (use-package flycheck-golangci-lint
@@ -209,35 +281,31 @@
    ("k" . origami-previous-fold)
    ("j" . origami-forward-fold)
    ("x" . origami-reset)))
-;;===============================Development=====================================================
 ;;===============================UI==============================================================
 (require 'subr-x)
 (setq dw/is-termux
       (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
 
-(unless dw/is-termux
-  (scroll-bar-mode -1)        ; Disable visible scrollbar
-  (tool-bar-mode -1)          ; Disable the toolbar
-  (tooltip-mode -1)           ; Disable tooltips
-  (set-fringe-mode 10))       ; Give some breathing room
-
+(scroll-bar-mode -1)        ; Disable visible scrollbar
+(tool-bar-mode -1)          ; Disable the toolbar
+(tooltip-mode -1)           ; Disable tooltips
+(set-fringe-mode 10)       ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
 
 ;; Set up the visible bell
 (setq visible-bell t)
 
-(unless dw/is-termux
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-  (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-  (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-  (setq scroll-step 1) ;; keyboard scroll one line at a time
-  (setq use-dialog-box nil)) ;; Disable dialog boxes since they weren't working in Mac OSX
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-step 1) ;; keyboard scroll one line at a time
+(setq use-dialog-box nil) ;; Disable dialog boxes since they weren't working in Mac OSX
 
-(unless dw/is-termux
-  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
-  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
-  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-  (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+
+(set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+(add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
 
 (column-number-mode)
 
@@ -251,36 +319,46 @@
 (dolist (mode '(org-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
+(use-package almost-mono-themes
+  :ensure t
+  :config
+  ;; (load-theme 'almost-mono-black t)
+  ;;(load-theme 'almost-mono-gray t)
+   ;;(load-theme 'almost-mono-cream t)
+  (load-theme 'eink t)
+  (set-background-color "white")
+  (blink-cursor-mode 0)
+  )
+
+(use-package  monotropic-theme
+  :ensure t)
 (use-package  spacegray-theme
   :ensure t)
-(use-package doom-themes
+(use-package eink-theme
+  :ensure t)
+(use-package spacemacs-theme
   :ensure t)
 
-(unless dw/is-termux
-  (load-theme 'doom-palenight t)
-  (doom-themes-visual-bell-config))
 
-(pcase system-type
-  ((or 'gnu/linux 'windows-nt 'cygwin)
-   (set-face-attribute 'default nil
-                       :font "JetBrains Mono"
-                       :weight 'light
-                       :height 130))
-  ('darwin (set-face-attribute 'default nil :font "Fira Mono" :height 130)))
+;;(load-theme 'doom-dracula t)
+;;(doom-themes-visual-bell-config)
+
+(set-face-attribute 'default nil
+                    :font "JetBrains Mono"
+                    :weight 'light
+                    :height 200)
 
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil
                     :font "JetBrains Mono"
                     :weight 'light
-                    :height 130)
+                    :height 260)
 
 (use-package default-text-scale
   :ensure t
   :config
   (default-text-scale-mode)
   )
-
-;;===============================UI==============================================================
 ;;==========================Auto-Save============================================================
 
 (use-package diminish
@@ -296,24 +374,19 @@
 
 (setq global-auto-revert-non-file-buffers t)
 (global-auto-revert-mode 1)
-;;==========================Auto-Save============================================================
 ;;==========================Other================================================================
 (set-default-coding-systems 'utf-8)
 (server-start)
 (setq inhibit-startup-message t)
 (set-default 'truncate-lines t)
-;;(setq debug-on-error t)
-;;==========================Other================================================================
+(setq debug-on-error t)
 ;;==========================Chats================================================================
-
 (use-package visual-fill-column
   :ensure t)
 (use-package rainbow-identifiers
   :ensure t)
-
 (use-package telega
   :ensure t
-  :load-path  "~/projects/telega.el"
   :commands (telega)
   :config
   (setq telega-server-libs-prefix "/usr/local")
@@ -335,62 +408,67 @@
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(default-input-method "russian-computer")
- '(global-company-mode t)
+ '(excorporate-configuration nil)
+ '(exwm-randr-screen-change-hook nil)
+ '(global-company-mode nil)
  '(ispell-dictionary nil)
+ '(ntlm-compatibility-level 5)
+ '(org-image-actual-width '(0))
  '(package-selected-packages
-   '(w3m dired-rsync dumb-jump go-mode dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
  '(telega-server-libs-prefix "/usr/local"))
+ '(w3m w3m-emacs emacs-w3m plantuml-mode eink-theme monotropic-theme eink-emacs standard-themes standard-light dired-rsync org-roam almost-mono-themes auto-package-update spacemacs-theme 0x0 go-mode mentor ox-beamer org-beamer emms-setup org-present magit exwm-config dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
 ;;==============================================Mail===================================================================
 
 ;; (setq dw/mail-enabled nil)
 
-;; (use-package excorporate
-;;   :ensure t
-;;   :config
-;;   (setq org-agenda-include-diary t)
-;;   (setq excorporate-configuration (quote ("aleksandr.akselrod@sbermegamarket.ru" . "https://10.30.48.65/EWS/Exchange.asmx")))
-;;   (excorporate-diary-enable)
-;;   )
+ (use-package excorporate
+   :ensure t
+   :config
+   (setq org-agenda-include-diary t)                       
+   (setq excorporate-configuration (quote ("a.akselrod" . "https://ews.tcsbank.ru/EWS/Exchange.asmx")))
+   (excorporate-diary-enable)
+   )
 
-;; (use-package mu4e
-;;   :config
+(use-package mu4e
+  :load-path "/opt/homebrew/Cellar/mu/1.12.2/share/emacs/site-lisp/mu/mu4e"
+  :config
 
-;;   ;; Load org-mode integration
-;;   (require 'org-mu4e)
+  ;; Load org-mode integration
+  (require 'mu4e-org)
+  ;; Refresh mail using isync every 10 minutes
+  (setq mu4e-update-interval (* 10 60))
+  (setq mu4e-get-mail-command "mbsync -a")
+  (setq mu4e-maildir "~/.mail/tcs")
+      ;; Make sure that moving a message (like to Trash) causes the
+    ;; message to get a new file name.  This helps to avoid the
+    ;; dreaded "UID is N beyond highest assigned" error.
+    ;; See this link for more info: https://stackoverflow.com/a/43461973
+  (setq mu4e-change-filenames-when-moving t)
+  ;; Display options
+  (setq mu4e-view-show-images t)
+  (setq mu4e-view-show-addresses 't)
 
-;;   ;; Refresh mail using isync every 10 minutes
-;;   (setq mu4e-update-interval (* 10 60))
-;;   (setq mu4e-get-mail-command "mbsync -a")
-;;   (setq mu4e-maildir "~/.mail/goods")
-;;       ;; Make sure that moving a message (like to Trash) causes the
-;;     ;; message to get a new file name.  This helps to avoid the
-;;     ;; dreaded "UID is N beyond highest assigned" error.
-;;     ;; See this link for more info: https://stackoverflow.com/a/43461973
-;;   (setq mu4e-change-filenames-when-moving t)
-;;   ;; Display options
-;;   (setq mu4e-view-show-images t)
-;;   (setq mu4e-view-show-addresses 't)
-
-;;   ;; Composing mail
-;;   (setq mu4e-compose-dont-reply-to-self t)
-;;   ;; Use Ivy for mu4e completions (maildir folders, etc)
-;;   (setq mu4e-completing-read-function #'ivy-completing-read)
-;;   ;; Use mu4e for sending e-mail
-;;   (setq mail-user-agent 'mu4e-user-agent
-;;         message-send-mail-function 'smtpmail-send-it
-;;         smtpmail-smtp-server "mail.sbermegamarket.ru"
-;;         smtpmail-smtp-service 587
-;;         smtpmail-stream-type  'starttls)
-;;   (require 'mu4e-icalendar)
-;;   (mu4e-icalendar-setup)
-;;   (require 'org-agenda)
-;;   (setq gnus-icalendar-org-capture-file "~/work/calendar.org")
-;;   (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
-;;   (gnus-icalendar-org-setup)
-;;   :hook
-;;   (mu4e-compose-pre . (lambda () 
-;; 			(setq user-mail-address "aleksandr.akselrod@sbermegamarket.ru")))
-;;   )
+  ;; Composing mail
+  (setq mu4e-compose-dont-reply-to-self t)
+  ;; Use Ivy for mu4e completions (maildir folders, etc)
+  (setq mu4e-completing-read-function #'ivy-completing-read)
+  ;; Use mu4e for sending e-mail
+  (setq mail-user-agent 'mu4e-user-agent
+        message-send-mail-function 'smtpmail-send-it
+        smtpmail-smtp-server "smtp.tcsbank.ru"
+        smtpmail-smtp-service 25)
+ ;;       smtpmail-stream-type  'starttls)
+  (require 'mu4e-icalendar)
+  (mu4e-icalendar-setup)
+  (require 'org-agenda)
+  (setq gnus-icalendar-org-capture-file "~/work/Inbox.org")
+  (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
+  (gnus-icalendar-org-setup)
+  (setq mu4e-mu-debug t)
+  :hook
+  (mu4e-compose-pre . (lambda () 
+			(setq user-mail-address "a.akselrod@tinkoff.ru")))
+  )
 
 ;;==========================Ivy=======================================================================
 (use-package swiper
@@ -406,7 +484,7 @@
   (global-set-key "\C-s" 'swiper)
   (global-set-key (kbd "C-c C-r") 'ivy-resume)
   (global-set-key (kbd "<f6>") 'ivy-resume)
-;;  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key (kbd "M-x") 'counsel-M-x)
   (global-set-key (kbd "C-x C-f") 'counsel-find-file)
   (global-set-key (kbd "<f1> f") 'counsel-describe-function)
   (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
@@ -435,18 +513,15 @@
 
   (mu4e-alert-enable-notifications))
 ;;======================================OrgMode=======================================================================
-(use-package org-alert
-  :ensure t
-  :custom (alert-default-style 'message)
-  :config
-  (setq org-alert-interval 300
-      org-alert-notify-cutoff 10
-      org-alert-notify-after-event-cutoff 10)
-  (org-alert-enable))
 
+(use-package ox-beamer)
+
+(setq org-image-actual-width (list 300))
+
+(setq org-babel-python-command "/opt/homebrew/bin/python3")
 (org-babel-do-load-languages
  'org-babel-load-languages
- '((python . t)))
+ '((python . t) (plantuml . t)))
 
 (setq org-refile-targets '(
 			  (nil :maxlevel . 3)
@@ -465,10 +540,11 @@
 (setq org-directory
       "~/work")
 (global-set-key (kbd "C-c a") 'org-agenda)
+
 (defun dw/org-path (path)
   (expand-file-name path org-directory))
 
-(setq org-agenda-files '("~/work"))
+(setq org-agenda-files '("~/work/wiki" "~/work/Inbox.org" "~/tmsg/1-1.org" "~/twork/1-1.org" "~/client-service/board.org"))
 
 (setq org-default-notes-file (dw/org-path "notes.org"))
 
@@ -506,15 +582,21 @@
 
 (setq org-columns-default-format "%20CATEGORY(Category) %65ITEM(Task) %TODO %6Effort(Estim){:}  %6CLOCKSUM(Clock) %TAGS")
 
+
+(defun get-month-tag ()
+  (let ((month (format-time-string "%B")))
+  (concat "@" month)))
+
+;; Documentation on todo filtering is here https://orgmode.org/manual/Filtering_002flimiting-agenda-items.html
 (setq org-agenda-custom-commands
       `(("d" "Dashboard"
          ((agenda "" ((org-deadline-warning-days 7)))
-          (tags-todo "+PRIORITY=\"A\""
-                     ((org-agenda-overriding-header "High Priority")))
-          (tags-todo "+followup" ((org-agenda-overriding-header "Needs Follow Up")))
-          (todo "NEXT"
-                ((org-agenda-overriding-header "Next Actions")
-                 (org-agenda-max-todos nil)))
+	  (tags-todo (concat "@tmsg:" (get-month-tag)) ((org-agenda-overriding-header "TMsg")))
+	  (tags-todo (concat "@twork:" (get-month-tag)) ((org-agenda-overriding-header "TWork")))
+	  (tags-todo (concat "@derevyanko:" (get-month-tag)) ((org-agenda-overriding-header "Derevyanko")))
+	  (tags-todo (concat "@self_service:" (get-month-tag)) ((org-agenda-overriding-header "Self Service")))
+	  (tags-todo (concat (get-month-tag) "-@tmsg-@twork-@derevyanko-@self_service") ((org-agenda-overriding-header "Other")))			  
+	  
           (todo "TODO"
                 ((org-agenda-overriding-header "Unprocessed Inbox Tasks")
                  (org-agenda-files '(,(dw/org-path "Inbox.org")))
@@ -533,6 +615,16 @@
 ;;================================Agenda=================================
 (add-hook 'org-timer-set-hook #'org-clock-in)
 ;;==============================Templates================================
+
+(global-set-key (kbd "C-x <print>")
+  (lambda ()
+    (interactive)
+    (let ((path (concat "~/Documents/Screenshot-" (format-time-string "%Y-%m-%d,%H:%M:%S") ".png")))
+      (start-process-shell-command
+       "import" nil (concat "import -window root " path))
+    (message (concat "Screenshot saved to " path)))
+    ))
+
 (global-set-key (kbd "C-c c") 'org-capture)
 (defun dw/get-todays-journal-file-name ()
   "Gets the journal file name for today's date"
@@ -578,7 +670,7 @@
          :clock-in :clock-resume
          :empty-lines 1)
 	("#" "used by gnus-icalendar-org" entry
-	 (file+olp "~/work/calendar.org" "Calendar")
+	 (file+olp "~/work/Inbox.org" "Calendar")
 	 "%i" :immediate-finish t)
 	("jj" "Journal" entry
          (file+olp+datetree ,(dw/org-path "Journal.org"))
@@ -644,7 +736,7 @@
  (setq display-time-day-and-date t)
  (display-time-mode 1)
 
- (defun efs/exwm-update-class ()
+ (defun alex/exwm-update-class ()
    (exwm-workspace-rename-buffer exwm-class-name))
 
 (require 'em-tramp)
@@ -654,7 +746,7 @@
 (setq password-cache t) ; enable password caching
 (setq password-cache-expiry 3600) ; for one hour (time in secs)
 
-(defun efs/configure-window-by-class ()
+(defun alex/configure-window-by-class ()
   (interactive)
   (pcase exwm-class-name
     ("firefox" (exwm-workspace-move-window 1))
@@ -662,12 +754,12 @@
     ("mpv" (exwm-floating-toggle-floating)
            (exwm-layout-toggle-mode-line))))
 
-(defun efs/exwm-update-class ()
+(defun alex/exwm-update-class ()
   (exwm-workspace-rename-buffer exwm-class-name))
 
-(defun efs/exwm-update-title ()
+(defun alex/exwm-update-title ()
   (pcase exwm-class-name
-    ("Firefox" (exwm-workspace-rename-buffer (format "Firefox: %s" exwm-title)))))
+    ("Opera" (exwm-workspace-rename-buffer (format "Opera: %s" exwm-title)))))
 
 (use-package exwm
   :ensure t
@@ -676,22 +768,25 @@
    (setq exwm-workspace-number 5)
 
   ;; ;; When window "class" updates, use it to set the buffer name
-   (add-hook 'exwm-update-class-hook #'efs/exwm-update-class)
-   (add-hook 'exwm-update-title-hook #'efs/exwm-update-title)
-   (add-hook 'exwm-manage-finish-hook #'efs/configure-window-by-class)
+;;   (add-hook 'exwm-update-class-hook #'alex/exwm-update-class)
+;;   (add-hook 'exwm-update-title-hook #'alex/exwm-update-title)
+;;   (add-hook 'exwm-manage-finish-hook #'alex/configure-window-by-class)
 
   ;; ;; Rebind CapsLock to Ctrl
   ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
 
   ;; ;; Set the screen resolution (update this to be the correct resolution for your screen!)
-  ;; (require 'exwm-randr)
-  ;; (exwm-randr-enable)
-  ;; (start-process-shell-command "xrandr" nil "xrandr --output Virtual-1 --primary --mode 2048x1152 --pos 0x0 --rotate normal")
+;;   (require 'exwm-randr)
+;;   (exwm-randr-enable)
 
-  ;; (setq exwm-randr-workspace-monitor-plist '(2 "HDMI-1" 3 "HDMI-1" 4 "DP-3"))
-  ;; (setq exwm-workspace-warp-cursor t)
-   (setq mouse-autoselect-window t
-   	focus-follows-mouse t)
+;;   (defun dw/on-screen-changed ()
+;;     (interactive)
+;;     (app/detect-scale)
+;;     (app/rerun-gtk-apps)
+;;     )
+
+;;   (setq mouse-autoselect-window t
+;;   	focus-follows-mouse t)
   
   ;; ;; Load the system tray before exwm-init
   ;; ;; (require 'exwm-systemtray)
@@ -702,31 +797,32 @@
    (setenv "QT_IM_MODULE" "xim")
    (setenv "XMODIFIERS" "@im=exwm-xim")
    (setenv "CLUTTER_IM_MODULE" "xim")
+   (setenv "GDK_DPI_SCALE" "-1")
    (setenv "EDITOR" "emacsclient")
    
    (require 'exwm-xim)
    (exwm-xim-enable)
   
-  (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
+   (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
   ;; These keys should always pass through to Emacs
-  (setq exwm-input-prefix-keys
-    '(?\C-x
-      ?\C-u
-      ?\C-h
-      ?\C-\\
-      ?\M-x
-      ?\M-`
-      ?\M-&
-      ?\M-:
-      ?\C-\M-j  ;; Buffer list
-      ?\C-\M-n  ;; Next workspace
-      ?\C-\;))  ;; Ctrl+Space
+   (setq exwm-input-prefix-keys
+	 '(?\C-x	  
+	   ?\C-u
+	   ?\C-h
+	   ?\C-\\
+	   ?\M-x
+	   ?\M-`
+	   ?\M-&
+	   ?\M-:
+	   ?\C-\M-j  ;; Buffer list
+	   ?\C-\M-n  ;; Next workspace
+	   ?\C-\;))  ;; Ctrl+Space
+   
+   ;; Ctrl+Q will enable the next key to be sent directly
+   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
 
-  ;; Ctrl+Q will enable the next key to be sent directly
-  (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
-
-  ;; ;; Set up global key bindings.  These always work, no matter the input state!
-  ;; ;; Keep in mind that changing this list after EXWM initializes has no effect.
+   ;; ;; Set up global key bindings.  These always work, no matter the input state!
+   ;; ;; Keep in mind that changing this list after EXWM initializes has no effect.
    (setq exwm-input-global-keys
          `(
            ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
@@ -758,18 +854,23 @@
      (let ((command-parts (split-string command "[ ]+")))
        (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
-  (defun dw/exwm-init-hook ()
-    (efs/start-panel)
-    (exwm/run-in-background "nm-applet")
-    (exwm/run-in-background "blueman-applet")
-    (exwm/run-in-background "indicator-sound-switcher")
-    )
-  (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
-  (exwm-enable)
-  )
+;;   (defun dw/exwm-init-hook ()
+;;     (app/start-panel)
+ ;;    (exwm/run-in-background "/home/alex/auto-rotate.sh")
+ ;;    (exwm/run-in-background "nm-applet")
+ ;;    (exwm/run-in-background "blueman-applet")
+ ;;    (exwm/run-in-background "indicator-sound-switcher")
+     
+ ;;    (dw/on-screen-changed)
+ ;;    )
+ ;;  (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
+   (exwm-enable)
+   )
+
 ;;================================Hugo===================================
 (use-package ox-hugo
   :ensure t)
+
 (setq org-hugo-base-dir "/home/alex/work/org-share")
 
 
@@ -785,3 +886,209 @@
   ;; optional keyboard short-cut
   (global-set-key "\C-xm" 'browse-url-at-point)
 )
+
+;;================================Git====================================
+(use-package magit
+  :ensure t)
+
+;;================================Org-Present===================================
+
+;; Key	Command	Description
+;; <left>	org-present-prev	Move to the previous slide
+;; <right>	org-present-next	Move to the next slide
+;; C-c <	org-present-beginning	Move to the first slide
+;; C-c >	org-present-end	Move to the last slide
+;; C-c C-q	org-present-quit	Exit the presentation and reset buffer
+;; C-c C-r	org-present-read-only	Make the slides read-only
+;; C-c C-w	org-present-read-write	Make the slides writable
+(use-package org-present
+  :init
+  (setq org-present-text-scale 3)
+  :hook ((org-present-mode . (lambda ()
+			       (org-present-big)
+			       (org-display-inline-images)
+			       (org-present-hide-cursor)
+			       (visual-line-mode 1)))
+	 
+	 (org-present-mode-quit . (lambda ()
+				    (org-present-small)
+				    (org-remove-inline-images)
+				    (org-present-show-cursor)
+				    (visual-line-mode 0))))
+  :ensure t)
+
+;; (set-face-attribute 'default nil :font "JetBrains Mono" :weight 'light :height )
+;; (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono" :weight 'light :height app-font-size)
+;; (set-face-attribute 'variable-pitch nil :font "JetBrains Mono" :weight 'light :height 1.3)
+
+
+;; (defun my/org-present-start ()
+;;   ;; Center the presentation and wrap lines
+;;   (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+;;                                    (header-line (:height 4.0) variable-pitch)
+;;                                    (org-document-title (:height 1.75) org-document-title)
+;;                                    (org-code (:height 1.55) org-code)
+;;                                    (org-verbatim (:height 1.55) org-verbatim)
+;;                                    (org-block (:height 1.25) org-block)
+;;                                    (org-block-begin-line (:height 0.7) org-block)))
+;;   (setq header-line-format " ")
+;;   (visual-fill-column-mode 0)
+;;   (visual-line-mode 1))
+
+;; (defun my/org-present-end ()
+;;   ;; Stop centering the document
+;;   (setq-local face-remapping-alist '((default variable-pitch default)))
+;;   (setq header-line-format nil)
+;;   (visual-fill-column-mode 0)
+;;   (visual-line-mode 0))
+
+;; ;; Register hooks with org-present
+
+;; (add-hook 'org-present-mode-hook 'my/org-present-start)
+;; (add-hook 'org-present-mode-quit-hook 'my/org-present-end)
+
+;; (setq visual-fill-column-width 1000
+;;       visual-fill-column-center-text t)
+;; ;; Hide emphasis markers on formatted text
+;; (setq org-hide-emphasis-markers t)
+
+;; Resize Org headings
+(dolist (face '(
+		(org-level-1 . 1.5)
+                (org-level-2 . 1.2)
+                (org-level-3 . 1.0)
+                (org-level-4 . 1.0)
+                (org-level-5 . 1.0)
+                (org-level-6 . 1.0)
+                (org-level-7 . 1.0)
+                (org-level-8 . 1.0)))
+   (set-face-attribute (car face) nil :font "JetBrains Mono" :weight 'medium :height (cdr face)))
+
+;; ;; Make the document title a bit bigger
+;; (set-face-attribute 'org-document-title nil :font "Iosevka Aile" :weight 'bold :height 1.3)
+
+;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+;;(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+;;(set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+;;(set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+;;(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+;;(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+;;(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+;;(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+;;(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+
+;;========================================== EMMS ====================================================
+;; https://www.maketecheasier.com/use-emacs-to-play-music-with-emms/
+
+(defun my/tick-symbol (x)
+  "Return a tick if X is true-ish."
+  (if x "x" " "))
+
+(use-package emms-setup
+  :ensure nil
+  :init
+  (add-hook 'emms-player-started-hook 'emms-show)
+  :config
+  (setq emms-show-format "Playing: %s")
+  (emms-all)
+  (emms-default-players)
+  (setq emms-source-file-default-directory "~/disk/")
+  (defhydra hydra-emms (global-map "<f4>")
+    "
+^Volume^     ^Controls^       ^Playback^              ^Misc^
+^^^^^^^^----------------------------------------------------------------
+_+_: inc     _n_: next        _r_: repeat one [% s(my/tick-symbol emms-repeat-track)]     _t_oggle modeline
+_-_: dec     _p_: prev        _R_: repeat all [% s(my/tick-symbol emms-repeat-playlist)]     _T_oggle only time
+^ ^          _<_: seek bw     _#_: shuffle            _s_elect
+^ ^          _>_: seek fw     _%_: sort               _g_oto EMMS buffer
+^ ^        _SPC_: play/pause
+^ ^        _DEL_: restart
+  "
+    ("+" emms-volume-raise)
+    ("-" emms-volume-lower)
+    ("n" emms-next)
+    ("p" emms-previous)
+    ("<" emms-seek-backward)
+    (">" emms-seek-forward)
+    ("SPC" emms-pause)
+    ("DEL" (emms-player-seek-to 0))
+    ("<backspace>" (emms-player-seek-to 0))
+    ("r" emms-toggle-repeat-track)
+    ("R" emms-toggle-repeat-playlist)
+    ("#" emms-shuffle)
+    ("%" emms-sort)
+    ("g" (progn (emms)
+		(with-current-emms-playlist
+                  (emms-playlist-mode-center-current))))
+
+    ("q" nil :exit t))
+  
+  )
+(use-package emms
+  :ensure t
+  :custom
+  (emms-playlist-buffer-name "*Music*" "EMMS Music Buffer name")
+  (emms-source-file-default-directory "~/Music" "Path to EMMS music library")
+  )
+
+
+(setq org-confirm-babel-evaluate nil)
+
+(setenv "JIRA_USER" "a.akselrod")
+(setenv "JIRA_PASSWORD" "Ospappt6")
+(setq org-confirm-babel-evaluate 'nil)
+(setq org-src-preserve-indentation 't)
+
+
+(use-package auto-package-update
+  :ensure t
+  :custom
+  (auto-package-update-interval 7)
+  (auto-package-update-prompt-before-update t)
+  (auto-package-update-hide-results t)
+  :config
+  (auto-package-update-maybe)
+  (auto-package-update-at-time "09:00"))
+
+;;======================================== org-roam =====================================================
+
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory "~/work/wiki")
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert))
+  :config
+  (org-roam-setup))
+
+(use-package dired-rsync
+  :ensure t
+  :custom
+  (dired-rsync-command "/opt/local/bin/rsync" "Specify correct path to rsync on Mac")
+  :bind (("C-c C-r" . dired-rsync)))
+
+
+(defun my/copy-buffer-to-file ()
+  "Copies buffer to file"
+  (interactive)
+  (switch-to-buffer "*op-review*")
+  (write-region (point-min) (point-max) "op-review-debug")
+  )
+
+(setq revert-without-query 't)
+
+(use-package plantuml-mode :ensure t :config (setq org-plantuml-jar-path "~/Downloads/plantuml-1.2024.3.jar"))
+
+(setq eww-search-prefix "https://www.google.com/search?q=")
+
+
+(use-package w3m
+  :ensure t
+  :config
+;;  (setq browse-url-browser-function 'w3m-browse-url)
+  (autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
+  ;; optional keyboard short-cut
+  (global-set-key "\C-xm" 'browse-url-at-point)
+ )

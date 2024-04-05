@@ -1,24 +1,24 @@
-IMAPAccount goods
-Host mail.sbermegamarket.ru
-User akselrod
-PassCmd "gpg2 -q --for-your-eyes-only --no-tty -d ~/.mbsyncpass-sbermegamarket.gpg"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
+IMAPAccount tcs
+# https://ews.tcsbank.ru/EWS/Exchange.asmx
+Host imap.tcsbank.ru
+User a.akselrod
+PassCmd "cat ~/pass"
+TLSType IMAPS
+CertificateFile /opt/homebrew/Cellar/ca-certificates/2024-03-11/share/ca-certificates/cacert.pem
 AuthMechs LOGIN
-SSLVersions TLSv1.2
+TLSVersions +1.2
 
+IMAPStore tcs-remote
+Account tcs
 
-IMAPStore goods-remote
-Account goods
-
-MaildirStore goods-local
+MaildirStore tcs-local
 SubFolders Verbatim
-Path ~/.mail/goods/
-Inbox ~/.mail/goods/Inbox
+Path ~/.mail/tcs/
+Inbox ~/.mail/tcs/Inbox
 
-Channel goods
-Far :goods-remote:
-Near :goods-local:
+Channel tcs
+Far :tcs-remote:
+Near :tcs-local:
 # Exclude everything under the internal [Gmail] folder, except the interesting folders
 #Patterns * ![Goods]* "[Goods]/Sent Mail" "[Goods]/Starred" "[Goods]/All Mail"
 # Or include everything
