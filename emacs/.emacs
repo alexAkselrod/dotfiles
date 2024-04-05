@@ -1,9 +1,10 @@
 ;; For questions look here https://github.com/daviwil/emacs-from-scratch/blob/75f1d4e08512c49ea073c26058df6d4cca3a0d6b/Desktop.org#panel-with-polybar
+(add-to-list 'image-types 'svg)
+(menu-bar-mode t)
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
-
 
 ;;=======================Polybar===================================================
 (defun alex/polybar-exwm-workspace ()
@@ -132,7 +133,6 @@
   (setq company-minimum-prefix-length 1)
   :config
     (global-set-key (kbd "<C-return>") 'company-complete)
-    (global-company-mode 1)
 )
 
 (use-package flycheck-golangci-lint
@@ -309,19 +309,34 @@
 (dolist (mode '(org-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
+(use-package almost-mono-themes
+  :ensure t
+  :config
+  ;; (load-theme 'almost-mono-black t)
+  ;;(load-theme 'almost-mono-gray t)
+   ;;(load-theme 'almost-mono-cream t)
+  (load-theme 'eink t)
+  (set-background-color "white")
+  (blink-cursor-mode 0)
+  )
+
+(use-package  monotropic-theme
+  :ensure t)
 (use-package  spacegray-theme
   :ensure t)
-(use-package doom-themes
+(use-package eink-theme
+  :ensure t)
+(use-package spacemacs-theme
   :ensure t)
 
 
-(load-theme 'doom-palenight t)
-(doom-themes-visual-bell-config)
+;;(load-theme 'doom-dracula t)
+;;(doom-themes-visual-bell-config)
 
 (set-face-attribute 'default nil
                     :font "JetBrains Mono"
                     :weight 'light
-                    :height 130)
+                    :height 200)
 
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil
@@ -383,13 +398,15 @@
  '(custom-safe-themes
    '("631c52620e2953e744f2b56d102eae503017047fb43d65ce028e88ef5846ea3b" "5f128efd37c6a87cd4ad8e8b7f2afaba425425524a68133ac0efd87291d05874" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(default-input-method "russian-computer")
+ '(excorporate-configuration nil)
  '(exwm-randr-screen-change-hook nil)
- '(global-company-mode t)
+ '(global-company-mode nil)
  '(ispell-dictionary nil)
  '(ntlm-compatibility-level 5)
+ '(org-image-actual-width '(0))
  '(package-selected-packages
-   '(ox-beamer org-beamer emms-setup org-present magit exwm-config dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
- '(telega-server-libs-prefix "/usr/local"))
+   '(w3m w3m-emacs emacs-w3m plantuml-mode eink-theme monotropic-theme eink-emacs standard-themes standard-light dired-rsync org-roam almost-mono-themes auto-package-update spacemacs-theme 0x0 go-mode mentor ox-beamer org-beamer emms-setup org-present magit exwm-config dap-java which-key projectile java-snippets lsp-java ox-hugo excorporate openwith org-alert exwm elfeed-org emms elfeed company mu4e-alert counsel swiper ivy mu4e use-package-hydra use-package dap-mode lsp-ui lsp-mode go-autocomplete yasnippet multi-compile gotest go-scratch go-rename go-guru go-eldoc go-direx flycheck company-go))
+ '(telega-server-libs-prefix "/opt/homebrew/Cellar/tdlib/HEAD-d963044"))
 ;;==============================================Mail===================================================================
 
 ;; (setq dw/mail-enabled nil)
@@ -397,50 +414,51 @@
  (use-package excorporate
    :ensure t
    :config
-   (setq org-agenda-include-diary t)
+   (setq org-agenda-include-diary t)                       
    (setq excorporate-configuration (quote ("a.akselrod" . "https://ews.tcsbank.ru/EWS/Exchange.asmx")))
    (excorporate-diary-enable)
    )
 
-;; (use-package mu4e
-;;   :config
+(use-package mu4e
+  :load-path "/opt/homebrew/Cellar/mu/1.12.2/share/emacs/site-lisp/mu/mu4e"
+  :config
 
-;;   ;; Load org-mode integration
-;;   (require 'org-mu4e)
+  ;; Load org-mode integration
+  (require 'mu4e-org)
+  ;; Refresh mail using isync every 10 minutes
+  (setq mu4e-update-interval (* 10 60))
+  (setq mu4e-get-mail-command "mbsync -a")
+  (setq mu4e-maildir "~/.mail/tcs")
+      ;; Make sure that moving a message (like to Trash) causes the
+    ;; message to get a new file name.  This helps to avoid the
+    ;; dreaded "UID is N beyond highest assigned" error.
+    ;; See this link for more info: https://stackoverflow.com/a/43461973
+  (setq mu4e-change-filenames-when-moving t)
+  ;; Display options
+  (setq mu4e-view-show-images t)
+  (setq mu4e-view-show-addresses 't)
 
-;;   ;; Refresh mail using isync every 10 minutes
-;;   (setq mu4e-update-interval (* 10 60))
-;;   (setq mu4e-get-mail-command "mbsync -a")
-;;   (setq mu4e-maildir "~/.mail/goods")
-;;       ;; Make sure that moving a message (like to Trash) causes the
-;;     ;; message to get a new file name.  This helps to avoid the
-;;     ;; dreaded "UID is N beyond highest assigned" error.
-;;     ;; See this link for more info: https://stackoverflow.com/a/43461973
-;;   (setq mu4e-change-filenames-when-moving t)
-;;   ;; Display options
-;;   (setq mu4e-view-show-images t)
-;;   (setq mu4e-view-show-addresses 't)
-
-;;   ;; Composing mail
-;;   (setq mu4e-compose-dont-reply-to-self t)
-;;   ;; Use Ivy for mu4e completions (maildir folders, etc)
-;;   (setq mu4e-completing-read-function #'ivy-completing-read)
-;;   ;; Use mu4e for sending e-mail
-;;   (setq mail-user-agent 'mu4e-user-agent
-;;         message-send-mail-function 'smtpmail-send-it
-;;         smtpmail-smtp-server "mail.sbermegamarket.ru"
-;;         smtpmail-smtp-service 587
-;;         smtpmail-stream-type  'starttls)
-;;   (require 'mu4e-icalendar)
-;;   (mu4e-icalendar-setup)
-;;   (require 'org-agenda)
-;;   (setq gnus-icalendar-org-capture-file "~/work/calendar.org")
-;;   (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
-;;   (gnus-icalendar-org-setup)
-;;   :hook
-;;   (mu4e-compose-pre . (lambda () 
-;; 			(setq user-mail-address "aleksandr.akselrod@sbermegamarket.ru")))
-;;   )
+  ;; Composing mail
+  (setq mu4e-compose-dont-reply-to-self t)
+  ;; Use Ivy for mu4e completions (maildir folders, etc)
+  (setq mu4e-completing-read-function #'ivy-completing-read)
+  ;; Use mu4e for sending e-mail
+  (setq mail-user-agent 'mu4e-user-agent
+        message-send-mail-function 'smtpmail-send-it
+        smtpmail-smtp-server "smtp.tcsbank.ru"
+        smtpmail-smtp-service 25)
+ ;;       smtpmail-stream-type  'starttls)
+  (require 'mu4e-icalendar)
+  (mu4e-icalendar-setup)
+  (require 'org-agenda)
+  (setq gnus-icalendar-org-capture-file "~/work/Inbox.org")
+  (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
+  (gnus-icalendar-org-setup)
+  (setq mu4e-mu-debug t)
+  :hook
+  (mu4e-compose-pre . (lambda () 
+			(setq user-mail-address "a.akselrod@tinkoff.ru")))
+  )
 
 ;;==========================Ivy=======================================================================
 (use-package swiper
@@ -471,34 +489,29 @@
   (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
   (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history))
 ;;=======================================m4u alerts====================================================================
-;; (use-package mu4e-alert
-;;   :ensure t
-;;   :hook
-;;   ((after-init . mu4e-alert-enable-mode-line-display))
-;;   :after mu4e
-;;   :config
-;;   ;; Show unread emails from all inboxes
-;;   ;;(setq mu4e-alert-interesting-mail-query dw/mu4e-inbox-query)
-
-;;     ;; Show notifications for mails already notified
-;;   (setq mu4e-alert-notify-repeated-mails nil)
-
-;;   (mu4e-alert-enable-notifications))
-;;======================================OrgMode=======================================================================
-(use-package org-alert
+(use-package mu4e-alert
   :ensure t
-  :custom (alert-default-style 'message)
+  :hook
+  ((after-init . mu4e-alert-enable-mode-line-display))
+  :after mu4e
   :config
-  (setq org-alert-interval 300
-      org-alert-notify-cutoff 10
-      org-alert-notify-after-event-cutoff 10)
-  (org-alert-enable))
+  ;; Show unread emails from all inboxes
+  ;;(setq mu4e-alert-interesting-mail-query dw/mu4e-inbox-query)
+
+    ;; Show notifications for mails already notified
+  (setq mu4e-alert-notify-repeated-mails nil)
+
+  (mu4e-alert-enable-notifications))
+;;======================================OrgMode=======================================================================
 
 (use-package ox-beamer)
 
+(setq org-image-actual-width (list 300))
+
+(setq org-babel-python-command "/opt/homebrew/bin/python3")
 (org-babel-do-load-languages
  'org-babel-load-languages
- '((python . t)))
+ '((python . t) (plantuml . t)))
 
 (setq org-refile-targets '(
 			  (nil :maxlevel . 3)
@@ -521,7 +534,7 @@
 (defun dw/org-path (path)
   (expand-file-name path org-directory))
 
-(setq org-agenda-files '("~/work"))
+(setq org-agenda-files '("~/work/wiki" "~/work/Inbox.org" "~/tmsg/1-1.org" "~/twork/1-1.org" "~/client-service/board.org"))
 
 (setq org-default-notes-file (dw/org-path "notes.org"))
 
@@ -559,15 +572,21 @@
 
 (setq org-columns-default-format "%20CATEGORY(Category) %65ITEM(Task) %TODO %6Effort(Estim){:}  %6CLOCKSUM(Clock) %TAGS")
 
+
+(defun get-month-tag ()
+  (let ((month (format-time-string "%B")))
+  (concat "@" month)))
+
+;; Documentation on todo filtering is here https://orgmode.org/manual/Filtering_002flimiting-agenda-items.html
 (setq org-agenda-custom-commands
       `(("d" "Dashboard"
          ((agenda "" ((org-deadline-warning-days 7)))
-          (tags-todo "+PRIORITY=\"A\""
-                     ((org-agenda-overriding-header "High Priority")))
-          (tags-todo "+followup" ((org-agenda-overriding-header "Needs Follow Up")))
-          (todo "NEXT"
-                ((org-agenda-overriding-header "Next Actions")
-                 (org-agenda-max-todos nil)))
+	  (tags-todo (concat "@tmsg:" (get-month-tag)) ((org-agenda-overriding-header "TMsg")))
+	  (tags-todo (concat "@twork:" (get-month-tag)) ((org-agenda-overriding-header "TWork")))
+	  (tags-todo (concat "@derevyanko:" (get-month-tag)) ((org-agenda-overriding-header "Derevyanko")))
+	  (tags-todo (concat "@self_service:" (get-month-tag)) ((org-agenda-overriding-header "Self Service")))
+	  (tags-todo (concat (get-month-tag) "-@tmsg-@twork-@derevyanko-@self_service") ((org-agenda-overriding-header "Other")))			  
+	  
           (todo "TODO"
                 ((org-agenda-overriding-header "Unprocessed Inbox Tasks")
                  (org-agenda-files '(,(dw/org-path "Inbox.org")))
@@ -641,7 +660,7 @@
          :clock-in :clock-resume
          :empty-lines 1)
 	("#" "used by gnus-icalendar-org" entry
-	 (file+olp "~/work/calendar.org" "Calendar")
+	 (file+olp "~/work/Inbox.org" "Calendar")
 	 "%i" :immediate-finish t)
 	("jj" "Journal" entry
          (file+olp+datetree ,(dw/org-path "Journal.org"))
@@ -738,25 +757,25 @@
    (setq exwm-workspace-number 5)
 
   ;; ;; When window "class" updates, use it to set the buffer name
-   (add-hook 'exwm-update-class-hook #'alex/exwm-update-class)
-   (add-hook 'exwm-update-title-hook #'alex/exwm-update-title)
-   (add-hook 'exwm-manage-finish-hook #'alex/configure-window-by-class)
+;;   (add-hook 'exwm-update-class-hook #'alex/exwm-update-class)
+;;   (add-hook 'exwm-update-title-hook #'alex/exwm-update-title)
+;;   (add-hook 'exwm-manage-finish-hook #'alex/configure-window-by-class)
 
   ;; ;; Rebind CapsLock to Ctrl
   ;; (start-process-shell-command "xmodmap" nil "xmodmap ~/.emacs.d/exwm/Xmodmap")
 
   ;; ;; Set the screen resolution (update this to be the correct resolution for your screen!)
-   (require 'exwm-randr)
-   (exwm-randr-enable)
+;;   (require 'exwm-randr)
+;;   (exwm-randr-enable)
 
-   (defun dw/on-screen-changed ()
-     (interactive)
-     (app/detect-scale)
-     (app/rerun-gtk-apps)
-     )
+;;   (defun dw/on-screen-changed ()
+;;     (interactive)
+;;     (app/detect-scale)
+;;     (app/rerun-gtk-apps)
+;;     )
 
-   (setq mouse-autoselect-window t
-   	focus-follows-mouse t)
+;;   (setq mouse-autoselect-window t
+;;   	focus-follows-mouse t)
   
   ;; ;; Load the system tray before exwm-init
   ;; ;; (require 'exwm-systemtray)
@@ -824,23 +843,23 @@
      (let ((command-parts (split-string command "[ ]+")))
        (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
-   (defun dw/exwm-init-hook ()
-     (app/start-panel)
-     (exwm/run-in-background "/home/alex/auto-rotate.sh")
-     (exwm/run-in-background "nm-applet")
-     (exwm/run-in-background "blueman-applet")
-     (exwm/run-in-background "indicator-sound-switcher")
+;;   (defun dw/exwm-init-hook ()
+;;     (app/start-panel)
+ ;;    (exwm/run-in-background "/home/alex/auto-rotate.sh")
+ ;;    (exwm/run-in-background "nm-applet")
+ ;;    (exwm/run-in-background "blueman-applet")
+ ;;    (exwm/run-in-background "indicator-sound-switcher")
      
-     (dw/on-screen-changed)
-     )
-   (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
+ ;;    (dw/on-screen-changed)
+ ;;    )
+ ;;  (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
    (exwm-enable)
    )
 
 ;;================================Hugo===================================
 (use-package ox-hugo
   :ensure t)
-(setq org-hugo-base-dir "/home/alex/work/org-share")
+(setq org-hugo-base-dir "/Users/a.akselrod/tmsg/op-review")
 ;;================================Git====================================
 (use-package magit
   :ensure t)
@@ -934,6 +953,11 @@
 
 ;;========================================== EMMS ====================================================
 ;; https://www.maketecheasier.com/use-emacs-to-play-music-with-emms/
+
+(defun my/tick-symbol (x)
+  "Return a tick if X is true-ish."
+  (if x "x" " "))
+
 (use-package emms-setup
   :ensure nil
   :init
@@ -943,5 +967,101 @@
   (emms-all)
   (emms-default-players)
   (setq emms-source-file-default-directory "~/disk/")
+  (defhydra hydra-emms (global-map "<f4>")
+    "
+^Volume^     ^Controls^       ^Playback^              ^Misc^
+^^^^^^^^----------------------------------------------------------------
+_+_: inc     _n_: next        _r_: repeat one [% s(my/tick-symbol emms-repeat-track)]     _t_oggle modeline
+_-_: dec     _p_: prev        _R_: repeat all [% s(my/tick-symbol emms-repeat-playlist)]     _T_oggle only time
+^ ^          _<_: seek bw     _#_: shuffle            _s_elect
+^ ^          _>_: seek fw     _%_: sort               _g_oto EMMS buffer
+^ ^        _SPC_: play/pause
+^ ^        _DEL_: restart
+  "
+    ("+" emms-volume-raise)
+    ("-" emms-volume-lower)
+    ("n" emms-next)
+    ("p" emms-previous)
+    ("<" emms-seek-backward)
+    (">" emms-seek-forward)
+    ("SPC" emms-pause)
+    ("DEL" (emms-player-seek-to 0))
+    ("<backspace>" (emms-player-seek-to 0))
+    ("r" emms-toggle-repeat-track)
+    ("R" emms-toggle-repeat-playlist)
+    ("#" emms-shuffle)
+    ("%" emms-sort)
+    ("g" (progn (emms)
+		(with-current-emms-playlist
+                  (emms-playlist-mode-center-current))))
+
+    ("q" nil :exit t))
+  
   )
-(use-package emms :ensure t)
+(use-package emms
+  :ensure t
+  :custom
+  (emms-playlist-buffer-name "*Music*" "EMMS Music Buffer name")
+  (emms-source-file-default-directory "~/Music" "Path to EMMS music library")
+  )
+
+
+(setq org-confirm-babel-evaluate nil)
+
+(setenv "JIRA_USER" "a.akselrod")
+(setenv "JIRA_PASSWORD" "Ospappt6")
+(setq org-confirm-babel-evaluate 'nil)
+(setq org-src-preserve-indentation 't)
+
+
+(use-package auto-package-update
+  :ensure t
+  :custom
+  (auto-package-update-interval 7)
+  (auto-package-update-prompt-before-update t)
+  (auto-package-update-hide-results t)
+  :config
+  (auto-package-update-maybe)
+  (auto-package-update-at-time "09:00"))
+
+;;======================================== org-roam =====================================================
+
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory "~/work/wiki")
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert))
+  :config
+  (org-roam-setup))
+
+(use-package dired-rsync
+  :ensure t
+  :custom
+  (dired-rsync-command "/opt/local/bin/rsync" "Specify correct path to rsync on Mac")
+  :bind (("C-c C-r" . dired-rsync)))
+
+
+(defun my/copy-buffer-to-file ()
+  "Copies buffer to file"
+  (interactive)
+  (switch-to-buffer "*op-review*")
+  (write-region (point-min) (point-max) "op-review-debug")
+  )
+
+(setq revert-without-query 't)
+
+(use-package plantuml-mode :ensure t :config (setq org-plantuml-jar-path "~/Downloads/plantuml-1.2024.3.jar"))
+
+(setq eww-search-prefix "https://www.google.com/search?q=")
+
+
+(use-package w3m
+  :ensure t
+  :config
+;;  (setq browse-url-browser-function 'w3m-browse-url)
+  (autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
+  ;; optional keyboard short-cut
+  (global-set-key "\C-xm" 'browse-url-at-point)
+ )

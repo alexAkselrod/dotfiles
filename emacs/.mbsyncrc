@@ -1,12 +1,12 @@
 IMAPAccount tcs
 # https://ews.tcsbank.ru/EWS/Exchange.asmx
-Host mail.tinkoff.ru
+Host imap.tcsbank.ru
 User a.akselrod
-PassCmd "gpg -q --for-your-eyes-only --no-tty -d ~/dotfiles/emacs/.mbsyncpass-rcs.gpg"
-SSLType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
+PassCmd "cat ~/pass"
+TLSType IMAPS
+CertificateFile /opt/homebrew/Cellar/ca-certificates/2024-03-11/share/ca-certificates/cacert.pem
 AuthMechs LOGIN
-SSLVersions TLSv1.2
+TLSVersions +1.2
 
 IMAPStore tcs-remote
 Account tcs
