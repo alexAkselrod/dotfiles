@@ -1,0 +1,1189 @@
+#+TODO: BROKEN CHECK TODO
+
+#+title: .emacs configuration
+
+Документация по организации этого конфига лежит [[https://www.emacswiki.org/emacs/OrgDotemacs#searchlang][тут]].
+
+* Рабочее окружение
+** Search
+:PROPERTIES:
+:NAME: search
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package swiper
+  :ensure t)
+(use-package counsel
+  :ensure t)
+(use-package ivy
+  :ensure t
+  :config
+  (ivy-mode)
+  (setq ivy-use-virtual-buffers t)
+  :init
+  (global-set-key "\C-s" 'swiper)
+  (global-set-key (kbd "C-c C-r") 'ivy-resume)
+  (global-set-key (kbd "<f6>") 'ivy-resume)
+  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+  (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+  (global-set-key (kbd "<f1> o") 'counsel-describe-symbol)
+  (global-set-key (kbd "<f1> l") 'counsel-find-library)
+  (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+  (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+  (global-set-key (kbd "C-c g") 'counsel-git)
+  (global-set-key (kbd "C-c j") 'counsel-git-grep)
+  (global-set-key (kbd "C-c k") 'counsel-ag)
+  (global-set-key (kbd "C-x l") 'counsel-locate)
+  (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history))
+#+END_SRC
+** EXWM
+:PROPERTIES:
+:NAME: exwm
+:DEPENDS: startup-apps
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package exwm
+  :ensure t
+  :config
+  ;;Set the screen resolution (update this to be the correct resolution for your screen!)
+   (require 'exwm-randr)
+   (exwm-randr-enable)
+   (setq mouse-autoselect-window t
+   	focus-follows-mouse t)
+  
+  ;; ;; Load the system tray before exwm-init
+  ;; ;; (require 'exwm-systemtray)
+  ;; ;; (exwm-systemtray-enable)
+
+     ;; using xim input
+   (setenv "GTK_IM_MODULE" "xim")
+   (setenv "QT_IM_MODULE" "xim")
+   (setenv "XMODIFIERS" "@im=exwm-xim")
+   (setenv "CLUTTER_IM_MODULE" "xim")
+   (setenv "GDK_DPI_SCALE" "-1")
+   (setenv "EDITOR" "emacsclient")
+   
+   (require 'exwm-xim)
+   (exwm-xim-enable)
+  
+   (push ?\C-\\ exwm-input-prefix-keys)   ;; use Ctrl + \ to switch input method
+  ;; These keys should always pass through to Emacs
+   (setq exwm-input-prefix-keys
+	 '(?\C-x	  
+	   ?\C-u
+	   ?\C-h
+	   ?\C-\\
+	   ?\M-x
+	   ?\M-`
+	   ?\M-&
+	   ?\M-:
+	   ?\C-\M-j  ;; Buffer list
+	   ?\C-\;))  ;; Ctrl+Space
+   
+   ;; Ctrl+Q will enable the next key to be sent directly
+   (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key)
+
+   ;; ;; Set up global key bindings.  These always work, no matter the input state!
+   ;; ;; Keep in mind that changing this list after EXWM initializes has no effect.
+   (setq exwm-input-global-keys
+         `(
+           ;; Reset to line-mode (C-c C-k switches to char-mode via exwm-input-release-keyboard)
+           ([?\s-r] . exwm-reset)
+
+           ;; Move between windows
+           ([s-left] . windmove-left)
+           ([s-right] . windmove-right)
+           ([s-up] . windmove-up)
+           ([s-down] . windmove-down)
+           ;; Launch applications via shell command
+           ([?\s-&] . (lambda (command)
+                        (interactive (list (read-shell-command "$ ")))
+                        (start-process-shell-command command nil command)))))
+
+
+   (add-hook 'exwm-init-hook #'dw/exwm-init-hook)
+   (exwm-enable)
+   )
+#+END_SRC
+*** Надо бы разобраться, зачем
+:PROPERTIES:
+:NAME: unknown
+:END:
+#+BEGIN_SRC emacs-lisp
+(setq display-time-day-and-date t)
+(display-time-mode 1)
+
+(require 'em-tramp)
+(setq eshell-prefer-lisp-functions t)
+(setq eshell-prefer-lisp-variables t)
+;; alias sudo 'eshell/sudo $*'
+(setq password-cache t) ; enable password caching
+(setq password-cache-expiry 3600) ; for one hour (time in secs)
+#+END_SRC
+** Screenshot
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-x <print>")
+  (lambda ()
+    (interactive)
+    (let ((path (concat "~/Documents/Screenshot-" (format-time-string "%Y-%m-%d,%H:%M:%S") ".png")))
+      (start-process-shell-command
+       "import" nil (concat "import -window root " path))
+    (message (concat "Screenshot saved to " path)))
+    ))
+#+END_SRC
+** Делаем интерфейс удобным
+:PROPERTIES:
+:NAME: usability
+:END:
+#+BEGIN_SRC emacs-lisp
+(setq warning-minimum-level :error)
+(require 'subr-x)
+
+(scroll-bar-mode -1)        ; Disable visible scrollbar
+(tool-bar-mode -1)          ; Disable the toolbar
+(tooltip-mode -1)           ; Disable tooltips
+(set-fringe-mode 10)       ; Give some breathing room
+(menu-bar-mode -1)            ; Disable the menu bar
+
+;; Set up the visible bell
+(setq visible-bell t)
+
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-step 1) ;; keyboard scroll one line at a time
+(setq use-dialog-box nil) ;; Disable dialog boxes since they weren't working in Mac OSX
+
+(set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+(add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+(set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+
+(column-number-mode)
+;; Enable line numbers for some modes
+(dolist (mode '(text-mode-hook
+                prog-mode-hook
+                conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+
+;; Override some modes which derive from the above
+(dolist (mode '(org-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+(set-face-attribute 'default nil
+                    :font "JetBrains Mono"
+                    :weight 'light
+                    :height 130)
+
+;; Set the fixed pitch face
+(set-face-attribute 'fixed-pitch nil
+                    :font "JetBrains Mono"
+                    :weight 'light
+                    :height 260)
+
+(use-package default-text-scale
+  :ensure t
+  :config
+  (default-text-scale-mode)
+  )
+
+(set-default-coding-systems 'utf-8)
+(server-start)
+(setq inhibit-startup-message t)
+(setq debug-on-error t)
+#+END_SRC
+*** Раскладка клавиатуры
+:PROPERTIES:
+:NAME: keyboard-layout
+:END:
+#+BEGIN_SRC emacs-lisp
+(defun do-reverse-input-method (input-metod)
+  (if (and input-method (symbolp input-method))
+      (setq input-method (symbol-name input-method)))
+  (let ((current current-input-method)
+        (modifiers '(nil (control) (meta) (control meta))))
+    (when input-method
+      (activate-input-method input-method))
+    (when (and current-input-method quail-keyboard-layout)
+      (dolist (map (cdr (quail-map)))
+        (let* ((to (car map))
+               (from (quail-get-translation
+                      (cadr map) (char-to-string to) 1)))
+          (when (and (characterp from) (characterp to))
+            (dolist (mod modifiers)
+              (define-key local-function-key-map
+                (vector (append mod (list from)))
+                (vector (append mod (list to)))))))))
+    (when input-method
+      (activate-input-method current))))
+
+(defun reverse-input-method (input-method)
+  "Build the reverse mapping of single letters from INPUT-METHOD."
+  (interactive
+   (list (read-input-method-name "Use input method (default current): ")))
+  (do-reverse-input-method input-method))
+
+(setq input-method "russian-computer")
+(do-reverse-input-method "russian-computer")
+#+END_SRC
+** Тема
+:PROPERTIES:
+:NAME: theme
+:END:
+#+BEGIN_SRC emacs-lisp
+(defun get_display (displays)
+  (pcase displays
+    ('nil '())
+    (d (append (list (cdr (car (car d)))) (get_display (cdr d))))))
+
+(setq displays (get_display (display-monitor-attributes-list)))
+
+(use-package  plain-theme
+  :ensure t)
+
+(use-package  spacegray-theme
+  :ensure t)
+(use-package doom-themes
+  :ensure t)
+
+(use-package eink-theme
+  :ensure t)
+
+(if (member "LVDS-1" displays) (load-theme 'doom-palenight t) (load-theme 'eink t))
+
+
+(doom-themes-visual-bell-config)
+#+END_SRC
+** Автосохранение/Автообновление
+:PROPERTIES:
+:NAME: auto-save
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package diminish
+  :ensure t)
+
+(use-package super-save
+  :ensure t
+  :config
+  (super-save-mode +1)
+  (diminish 'super-save-mode)
+  (setq super-save-auto-save-when-idle t)  
+  )
+
+(setq global-auto-revert-non-file-buffers t)
+(global-auto-revert-mode 1)
+#+END_SRC
+* Приложения
+** Browser
+:PROPERTIES:
+:NAME: browser
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package w3m
+  :ensure t
+  :config
+  (setq browse-url-browser-function 'w3m-browse-url)
+  (autoload 'w3m-browse-url "w3m" "Ask a WWW browser to show a URL." t)
+  ;; optional keyboard short-cut
+  (global-set-key "\C-xm" 'browse-url-at-point)
+  :bind
+  ("C-c w o" . w3m-goto-url)
+ )
+#+END_SRC
+** Exchange
+:PROPERTIES:
+:NAME: exchange
+:END:
+*** BROKEN Email
+:PROPERTIES:
+:NAME: email
+:END:
+#+BEGIN_SRC emacs-lisp
+  (use-package mu4e
+    :config
+    ;; Load org-mode integration
+    (require 'org-mu4e)
+
+    ;; Refresh mail using isync every 10 minutes
+    (setq mu4e-update-interval (* 10 60))
+    (setq mu4e-get-mail-command "mbsync -a")
+    (setq mu4e-maildir "~/.mail/tcs")
+        ;; Make sure that moving a message (like to Trash) causes the
+      ;; message to get a new file name.  This helps to avoid the
+      ;; dreaded "UID is N beyond highest assigned" error.
+      ;; See this link for more info: https://stackoverflow.com/a/43461973
+    (setq mu4e-change-filenames-when-moving t)
+    ;; Display options
+    (setq mu4e-view-show-images t)
+    (setq mu4e-view-show-addresses 't)
+
+    ;; Composing mail
+    (setq mu4e-compose-dont-reply-to-self t)
+    ;; Use Ivy for mu4e completions (maildir folders, etc)
+    (setq mu4e-completing-read-function #'ivy-completing-read)
+    ;; Use mu4e for sending e-mail
+    (setq mail-user-agent 'mu4e-user-agent
+          message-send-mail-function 'smtpmail-send-it
+          smtpmail-smtp-server "smtp.tcsbank.ru"
+          smtpmail-smtp-service 25)
+    (require 'mu4e-icalendar)
+    (mu4e-icalendar-setup)
+    (require 'org-agenda)
+    (setq gnus-icalendar-org-capture-file "~/work/Inbox.org")
+    (setq gnus-icalendar-org-capture-headline '("Unprocessed"))
+    (gnus-icalendar-org-setup)
+    :hook
+    (mu4e-compose-pre . (lambda () 
+                          (setq user-mail-address "a.akselrod@tinkoff.ru")))
+    )
+#+END_SRC
+**** BROKEN Alerts
+#+BEGIN_SRC emacs-lisp
+  (use-package mu4e-alert
+    :ensure t
+    :hook
+    ((after-init . mu4e-alert-enable-mode-line-display))
+    :after mu4e
+    :config
+    ;; Show unread emails from all inboxes
+    ;;(setq mu4e-alert-interesting-mail-query dw/mu4e-inbox-query)
+
+      ;; Show notifications for mails already notified
+    (setq mu4e-alert-notify-repeated-mails nil)
+
+    (mu4e-alert-enable-notifications))
+#+END_SRC
+*** Calendar
+:PROPERTIES:
+:NAME: calendar
+:END:
+#+BEGIN_SRC emacs-lisp
+ (use-package excorporate
+   :ensure t
+   :config
+   (setq org-agenda-include-diary t)
+   (setq excorporate-configuration (quote ("a.akselrod" . "https://ews.tcsbank.ru/EWS/Exchange.asmx")))
+   (excorporate-diary-enable)
+   )
+#+END_SRC
+** Rsync
+:PROPERTIES:
+:NAME: rsync
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package dired-rsync
+  :ensure t
+  :custom
+  (dired-rsync-command "/opt/local/bin/rsync" "Specify correct path to rsync on Mac")
+  :bind (("C-c C-r" . dired-rsync)))
+#+END_SRC
+** Startup-Apps
+:PROPERTIES:
+:NAME: startup-apps
+:DEPENDS: office-apps
+:END:
+#+BEGIN_SRC emacs-lisp
+   (defun exwm/run-in-background (command)
+     (let ((command-parts (split-string command "[ ]+")))
+       (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
+
+   (defun dw/exwm-init-hook ()
+     (app/start-panel)
+     (exwm/run-in-background "nm-applet")
+     (exwm/run-in-background "blueman-applet")
+     (exwm/run-in-background "indicator-sound-switcher")
+     )
+#+END_SRC
+** RSS
+:PROPERTIES:
+:NAME: rss
+:END:
+Key Bindings
+
+b: Open the article in the browser
+G: Fetch feed updates from the servers
+s: Update the search filter
+c: Clear the search filter
+r Mark the entry as read
+u: Mark the entry as unread
+g: Refresh view of the feed listing (remove unread items)
+q: Quit the browser
+
+#+BEGIN_SRC emacs-lisp
+(use-package elfeed-org
+  :ensure t)
+
+(use-package elfeed
+  :ensure t
+  :config
+  (elfeed-org)
+  (setq rmh-elfeed-org-files (list "/home/alex/work/rss.org"))
+  :bind
+  ("C-x w" . elfeed)
+  )
+#+END_SRC
+
+#+RESULTS:
+: elfeed
+
+** Мессенджер
+:PROPERTIES:
+:NAME: messengers
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package visual-fill-column
+  :ensure t)
+(use-package rainbow-identifiers
+  :ensure t)
+(use-package telega
+  :ensure t
+  :commands (telega)
+  :config
+  (setq telega-server-libs-prefix "/usr/local")
+  :defer t)
+#+END_SRC
+** Офисные приложения
+:PROPERTIES:
+:NAME: office-apps
+:END:
+#+BEGIN_SRC emacs-lisp
+(setq processes '((vpn 'nil "/opt/cisco/anyconnect/bin/vpnui") (browser 'nil "opera") (time 'nil "/opt/TiMe/time-desktop") (panel 'nil "polybar panel") (ktalk 'nil "/opt/Толк/ktalk") (bluetooth 'nil "blueman-manager")))
+
+(defun app/kill-process (name)
+  (setq pid (nth 1 (assq name processes)))
+   (when pid
+     (ignore-errors
+       (kill-process pid)))
+   (setf pid nil)
+  )
+
+(defun app/start-process (name)
+  (app/kill-process name)
+  (setq command (nth 2 (assq name processes)))
+  (setq pid (start-process-shell-command command nil command))
+  (setf (nth 1 (assq name processes)) pid)
+  )
+
+(defun app/start-bluetooth ()
+  (interactive)
+  (app/kill-process 'bluetooth)
+  (app/start-process 'bluetooth)
+  )
+
+(defun app/start-browser ()
+  (interactive)
+  (app/kill-process 'browser)
+  (app/start-process 'browser)
+  )
+
+(defun app/start-vpn ()
+  (interactive)
+  (app/kill-process 'vpn)
+  (app/start-process 'vpn)
+  )
+
+(defun app/start-time ()
+  (interactive)
+  (app/kill-process 'time)
+  (app/start-process 'time)
+  )
+
+(defun app/start-panel ()
+  (interactive)
+  (app/kill-process 'panel)
+  (app/start-process 'panel)
+  )
+
+(defun app/start-ktalk ()
+  (interactive)
+  (app/kill-process 'ktalk)
+  (app/start-process 'ktalk)
+  )
+#+END_SRC
+
+** Media-Player
+:PROPERTIES:
+:NAME: media-player
+:END:
+https://www.maketecheasier.com/use-emacs-to-play-music-with-emms/
+#+BEGIN_SRC emacs-lisp
+(use-package emms-setup
+  :ensure nil
+  :init
+  (add-hook 'emms-player-started-hook 'emms-show)
+  :config
+  (setq emms-show-format "Playing: %s")
+  (emms-all)
+  (emms-default-players)
+  (setq emms-source-file-default-directory "~/disk/")
+  (defhydra hydra-emms (global-map "<f4>")
+    "
+^Volume^     ^Controls^       ^Playback^              ^Misc^
+^^^^^^^^----------------------------------------------------------------
+_+_: inc     _n_: next        _r_: repeat one [% s(my/tick-symbol emms-repeat-track)]     _t_oggle modeline
+_-_: dec     _p_: prev        _R_: repeat all [% s(my/tick-symbol emms-repeat-playlist)]     _T_oggle only time
+^ ^          _<_: seek bw     _#_: shuffle            _s_elect
+^ ^          _>_: seek fw     _%_: sort               _g_oto EMMS buffer
+^ ^        _SPC_: play/pause
+^ ^        _DEL_: restart
+  "
+    ("+" emms-volume-raise)
+    ("-" emms-volume-lower)
+    ("n" emms-next)
+    ("p" emms-previous)
+    ("<" emms-seek-backward)
+    (">" emms-seek-forward)
+    ("SPC" emms-pause)
+    ("DEL" (emms-player-seek-to 0))
+    ("<backspace>" (emms-player-seek-to 0))
+    ("r" emms-toggle-repeat-track)
+    ("R" emms-toggle-repeat-playlist)
+    ("#" emms-shuffle)
+    ("%" emms-sort)
+    ("g" (progn (emms)
+		(with-current-emms-playlist
+                  (emms-playlist-mode-center-current))))
+
+    ("q" nil :exit t))
+  
+  )
+(use-package emms
+  :ensure t
+  :custom
+  (emms-playlist-buffer-name "*Music*" "EMMS Music Buffer name")
+  (emms-source-file-default-directory "~/Music" "Path to EMMS music library")
+  )
+#+END_SRC
+* OrgMode
+- C-c C-,
+   
+    Prompt for a type of block structure, and insert the
+    block at point.If the region is active, it is wrapped in
+    the block.
+
+- C-c C-n
+   
+    Next heading.
+   
+- C-c C-p
+   
+    Previous heading.
+      
+- C-c C-u
+   
+    Backward to higher level heading.
+:PROPERTIES:
+:NAME: orgmode
+:END:
+#+BEGIN_SRC emacs-lisp
+(setq org-refile-targets '(
+			  (nil :maxlevel . 3)
+			  )
+      )
+
+(add-hook 'org-agenda-mode-hook (lambda ()
+				  (setq org-refile-targets '(
+							     (org-agenda-files :maxlevel . 3)
+							     )
+					)
+				  )
+	  )
+
+(setq org-startup-indented 't)
+
+(global-set-key (kbd "C-c a") 'org-agenda)
+(setq org-agenda-files '("~/work/wiki" "~/work/Inbox.org" "~/tmsg" "~/twork"))
+(setq org-startup-truncated 'nil)
+#+END_SRC
+** Workflow
+:PROPERTIES:
+:NAME: workflow
+:END:
+- =TODO= - A task that should be done at some point
+- =NEXT= - This task should be done next (in the Getting Things Done sense)
+- =BACK= - A task in the backlog to be done some day but not now
+- =WAIT= - Waiting for someone else to be actionable again
+- =DONE= - It's done!
+#+BEGIN_SRC emacs-lisp
+  (setq org-todo-keywords
+	'((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+	  (sequence "|" "WAIT(w)" "BACK(b)")))
+
+  (setq org-todo-keyword-faces
+	'(("NEXT" . (:foreground "orange red" :weight bold))
+	  ("WAIT" . (:foreground "HotPink2" :weight bold))
+	  ("BACK" . (:foreground "MediumPurple3" :weight bold))))
+
+  ;; Configure common tags
+  (setq org-tag-alist
+	'((:startgroup)
+					  ; Put mutually exclusive tags here
+	  (:endgroup)
+	  ("@arch" . ?a)
+	  ("followup" . ?f)))
+  #+END_SRC
+** Presentations
+:PROPERTIES:
+:NAME: presentations
+:DEPENDS: orgmode
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package ox-beamer)
+#+END_SRC
+
+Key	Command	Description
+<left>	org-present-prev	Move to the previous slide
+<right>	org-present-next	Move to the next slide
+C-c <	org-present-beginning	Move to the first slide
+C-c >	org-present-end	        Move to the last slide
+C-c C-q	org-present-quit	Exit the presentation and reset buffer
+C-c C-r	org-present-read-only	Make the slides read-only
+C-c C-w	org-present-read-write	Make the slides writable
+
+#+BEGIN_SRC emacs-lisp
+(use-package org-present
+  :init
+  (setq org-present-text-scale 3)
+  :hook ((org-present-mode . (lambda ()
+			       (org-present-big)
+			       (org-display-inline-images)
+			       (org-present-hide-cursor)
+			       (visual-line-mode 1)))
+	 
+	 (org-present-mode-quit . (lambda ()
+				    (org-present-small)
+				    (org-remove-inline-images)
+				    (org-present-show-cursor)
+				    (visual-line-mode 0))))
+  :ensure t)
+#+END_SRC
+*** BROKEN Org-Present-Customization
+#+BEGIN_SRC emacs-lisp
+  (set-face-attribute 'default nil :font "JetBrains Mono" :weight 'light :height )
+  (set-face-attribute 'fixed-pitch nil :font "JetBrains Mono" :weight 'light :height app-font-size)
+  (set-face-attribute 'variable-pitch nil :font "JetBrains Mono" :weight 'light :height 1.3)
+
+  (defun my/org-present-start ()
+    ;; Center the presentation and wrap lines
+    (setq-local face-remapping-alist '((default (:height 1.5) variable-pitch)
+                                     (header-line (:height 4.0) variable-pitch)
+                                     (org-document-title (:height 1.75) org-document-title)
+                                     (org-code (:height 1.55) org-code)
+                                     (org-verbatim (:height 1.55) org-verbatim)
+                                     (org-block (:height 1.25) org-block)
+                                     (org-block-begin-line (:height 0.7) org-block)))
+    (setq header-line-format " ")
+    (visual-fill-column-mode 0)
+    (visual-line-mode 1))
+
+  (defun my/org-present-end ()
+  ;; Stop centering the document
+    (setq-local face-remapping-alist '((default variable-pitch default)))
+    (setq header-line-format nil)
+    (visual-fill-column-mode 0)
+    (visual-line-mode 0))
+
+  ;; Register hooks with org-present
+
+  (add-hook 'org-present-mode-hook 'my/org-present-start)
+  (add-hook 'org-present-mode-quit-hook 'my/org-present-end)
+
+  (setq visual-fill-column-width 1000
+        visual-fill-column-center-text t)
+  ;; Hide emphasis markers on formatted text
+  (setq org-hide-emphasis-markers t)
+
+  ;; Resize Org headings
+  (dolist (face '(
+                  (org-level-1 . 1.5)
+                  (org-level-2 . 1.2)
+                  (org-level-3 . 1.0)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.0)
+                  (org-level-6 . 1.0)
+                  (org-level-7 . 1.0)
+                  (org-level-8 . 1.0)))
+     (set-face-attribute (car face) nil :font "JetBrains Mono" :weight 'medium :height (cdr face)))
+
+  ;; Make the document title a bit bigger
+  (set-face-attribute 'org-document-title nil :font "Iosevka Aile" :weight 'bold :height 1.3)
+
+  ;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+#+END_SRC
+** BROKEN Alerts
+:PROPERTIES:
+:NAME: alerts
+:DEPENDS: orgmode
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package org-alert
+  :ensure t
+  :custom (alert-default-style 'message)
+  :config
+  (setq org-alert-interval 300
+      org-alert-notify-cutoff 10
+      org-alert-notify-after-event-cutoff 10)
+  (org-alert-enable))
+#+END_SRC
+
+** BABEL
+:PROPERTIES:
+:NAME: babel
+:DEPENDS: orgmode
+:END:
+#+BEGIN_SRC emacs-lisp
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((python . t) (plantuml . t)))
+
+(setq org-confirm-babel-evaluate 'nil)
+(setq org-src-preserve-indentation 't)
+
+#+END_SRC
+
+** Agenda
+:PROPERTIES:
+:NAME: agenda
+:DEPENDS: orgmode
+:END:
+
+- v d or short d
+   
+    Switch to day view.
+   
+- v w or short w
+   
+    Switch to week view.
+   
+- f
+   
+    Go forward in time to display the span following the
+    current one.For example, if the display covers a week,
+    switch to the followingweek.
+   
+- b
+   
+    Go backward in time to display earlier dates.
+   
+- .
+   
+    Go to today.
+   
+- j
+   
+    Prompt for a date and go there.
+   
+- r g
+   
+    Recreate the agenda buffer, for example to reflect the
+    changes aftermodification of the timestamps of items.
+   
+- s 
+   
+    Save all Org buffers in the current Emacs session, and
+    also thelocations of IDs.
+
+
+#+BEGIN_SRC emacs-lisp
+(setq org-agenda-window-setup 'current-window)
+(setq org-agenda-span 'day)
+(setq org-agenda-start-with-log-mode t)
+
+;; Make done tasks show up in the agenda log
+(setq org-log-done 'time)
+(setq org-log-into-drawer t)
+
+(setq org-columns-default-format "%20CATEGORY(Category) %65ITEM(Task) %TODO %6Effort(Estim){:}  %6CLOCKSUM(Clock) %TAGS")
+
+(defun get-month-tag ()
+  (let ((month (format-time-string "%B")))
+  (concat "@" month)))
+
+(setq org-agenda-custom-commands
+      `(("d" "Dashboard"
+         ((agenda "" ((org-deadline-warning-days 7)))
+	  (tags-todo (concat "@tmsg:" (get-month-tag)) ((org-agenda-overriding-header "TMsg")))
+	  (tags-todo (concat "@twork:" (get-month-tag)) ((org-agenda-overriding-header "TWork")))
+	  (tags-todo (concat "@derevyanko:" (get-month-tag)) ((org-agenda-overriding-header "Derevyanko")))
+	  (tags-todo (concat "@self_service:" (get-month-tag)) ((org-agenda-overriding-header "Self Service")))
+	  (tags-todo (concat (get-month-tag) "-@tmsg-@twork-@derevyanko-@self_service") ((org-agenda-overriding-header "Other")))			  
+          (todo "TODO"
+                ((org-agenda-overriding-header "Unprocessed Inbox Tasks")
+;;                 (org-agenda-files '(,("~/work/wiki" "~/work/Inbox.org" "~/tmsg" "~/twork")))
+                 (org-agenda-text-search-extra-files nil)))))
+
+        ("n" "Next Tasks"
+         ((agenda "" ((org-deadline-warning-days 7)))
+          (todo "NEXT"
+                ((org-agenda-overriding-header "Next Tasks")))))
+
+        ;; Low-effort next actions
+        ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+         ((org-agenda-overriding-header "Low Effort Tasks")
+          (org-agenda-max-todos 20)
+          (org-agenda-files org-agenda-files)))))
+#+END_SRC
+** Capture Templates
+:PROPERTIES:
+:NAME: templates
+:DEPENDS: orgmode
+:END:
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-c c") 'org-capture)
+(defun dw/get-todays-journal-file-name ()
+  "Gets the journal file name for today's date"
+  (interactive)
+  (let* ((journal-file-name
+          (expand-file-name
+           (format-time-string "%Y/%Y-%2m-%B.org")
+           "~/work/Journal/"))
+         (journal-year-dir (file-name-directory journal-file-name)))
+    (if (not (file-directory-p journal-year-dir))
+        (make-directory journal-year-dir))
+    journal-file-name))
+
+(defun dw/on-org-capture ()
+  ;; Don't show the confirmation header text
+  (setq header-line-format nil)
+
+  ;; Control how some buffers are handled
+  (let ((template (org-capture-get :key t)))
+    (pcase template
+      ("jj" (delete-other-windows)))))
+
+(add-hook 'org-capture-mode-hook 'dw/on-org-capture)
+
+(setq org-capture-templates
+      `(("t" "Tasks")
+	("tt" "Task" entry (file ,"~/work/Inbox.org")
+         "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+	("ts" "Clocked Entry Subtask" entry (clock)
+         "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+
+	("j" "Journal Entries")
+	("je" "General Entry" entry
+         (file+olp+datetree ,"~/work/Journal.org")
+         "\n* %<%I:%M %p> - %^{Title} \n\n%?\n\n"
+         :tree-type week
+         :clock-in :clock-resume
+         :empty-lines 1)
+	("jt" "Task Entry" entry
+         (file+olp+datetree ,"~/work/Journal.org")
+         "\n* %<%I:%M %p> - Task Notes: %a\n\n%?\n\n"
+         :tree-type week
+         :clock-in :clock-resume
+         :empty-lines 1)
+	("#" "used by gnus-icalendar-org" entry
+	 (file+olp "~/work/calendar.org" "Calendar")
+	 "%i" :immediate-finish t)
+	("jj" "Journal" entry
+         (file+olp+datetree ,"~/work/Journal.org")
+         "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+         :tree-type week
+         :clock-in :clock-resume
+         :empty-lines 1)))
+#+END_SRC
+** Org Roam
+:PROPERTIES:
+:NAME: org-roam
+:END:
+#+BEGIN_SRC emacs-lisp
+
+(use-package org-roam
+  :load-path "~/org-roam"
+  :custom
+  (org-roam-directory "~/work/wiki")
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert))
+  :config
+  (org-roam-setup))
+#+END_SRC
+* BROKEN Изменяем разрешение при переключении экрана
+:PROPERTIES:
+:NAME: display-calibration
+:END:
+#+BEGIN_SRC emacs-lisp
+(defun app/set-font-size (size)
+  (setq app-font-size size)
+  (set-face-attribute 'default nil
+		      :font "JetBrains Mono"
+		      :weight 'light
+		      :height size)
+  )
+
+(defun app/detect-scale ()
+  (interactive)
+  (setenv "GDK_SCALE" "2")
+  (app/set-font-size 260)
+  (dolist (el (display-monitor-attributes-list))    
+    (setq d-name (cdr (assq 'name el)))
+    (when (not (string= d-name "eDP-1"))
+      (setenv "GDK_SCALE" "1")
+      (app/set-font-size 130)
+      )
+    )
+  )
+
+(defun app/rerun-gtk-apps ()
+  (interactive)
+  (dolist (element '(browser time ktalk bluetooth vpn))
+    (app/start-process element)))
+
+(defun disp/enable-home ()
+  (interactive)
+  (call-process-shell-command "xrandr -d :0 --output DP-1 --auto --output eDP-1 --off")
+  (setenv "GDK_SCALE" "1")
+  (app/set-font-size 130)
+   (app/rerun-gtk-apps)
+)
+
+(defun disp/enable-mobile ()
+  (interactive)
+  (call-process-shell-command "xrandr -d :0 --output DP-1 --off --output eDP-1 --auto")
+  (setenv "GDK_SCALE" "2")
+  (app/set-font-size 260)
+  (app/rerun-gtk-apps)
+)
+#+END_SRC
+
+* BROKEN Test Docs
+:PROPERTIES:
+:NAME: dsds
+:DEPENDS: ds ds ds 
+:END:
+:LOGBOOK:
+- State "DONE"       from "NEXT"       [2024-04-06 Сб 09:54]
+:END:
+#+BEGIN_SRC emacs-lisp
+  (setq line-number-mode t)
+  (setq column-number-mode t)
+  (setq frame-title-format "%b")
+  (set-background-color "Black")
+  (set-foreground-color "White")
+  (set-cursor-color "White")
+#+END_SRC  
+
+* Программирование
+** Превращаем емакс в среду разработки
+:PROPERTIES:
+:NAME: ide-settings
+:END:
+
+| Команда             | Что делает                  | Горячая клавиша |
+|---------------------+-----------------------------+-----------------|
+| lsp-find-references | Ищет все упоминания символа | s-l g r         |
+|                     | в коде                      |                 |
+|---------------------+-----------------------------+-----------------|
+|                     |                             |                 |
+ 
+
+#+BEGIN_SRC emacs-lisp
+(use-package use-package-hydra
+  :ensure t)
+(use-package hydra
+  :ensure t)
+(use-package flycheck
+  :ensure t)
+(use-package yasnippet
+  :ensure t)
+#+END_SRC
+*** Plant-UML
+:PROPERTIES:
+:NAME: plant-uml
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package plantuml-mode :ensure t :config (setq org-plantuml-jar-path "~/Downloads/plantuml-1.2024.3.jar"))
+#+END_SRC
+*** BROKEN Projectile
+Man about projectile is https://docs.projectile.mx/projectile/usage.html
+projectile-remove-known-project
+#+BEGIN_SRC emacs-lisp
+(use-package projectile
+  :ensure t
+  :init
+  (projectile-mode +1)
+  :config
+  (setq projectile-project-search-path '("~/projects/"))
+  :bind (:map projectile-mode-map
+              ("s-p" . projectile-command-map)
+              ("C-c p" . projectile-command-map)))
+#+END_SRC
+*** BROKEN LSP
+Manual on how to activate LSP features https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/
+Another good man about LSP https://develop.spacemacs.org/layers/+tools/lsp/README.html
+Manual about treemacs is here https://github.com/Alexander-Miller/treemacs
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-mode
+  :ensure t
+  ;; uncomment to enable gopls http debug server
+  ;; :custom (lsp-gopls-server-args '("-debug" "127.0.0.1:0"))
+  :commands (lsp lsp-deferred)
+  :hook
+  ((go-mode . lsp-deferred)
+   (go-mode . lsp-go-install-save-hooks)
+   (go-mode . yas-minor-mode)
+   (python-mode . lsp-deferred)
+   (python-mode . yas-minor-mode)
+   (java-mode . lsp-deferred)
+   (java-mode . yas-minor-mode)
+   (lsp-mode . lsp-enable-which-key-integration)
+   )
+  :config (progn
+            ;; use flycheck, not flymake
+            (setq lsp-prefer-flymake nil)
+	    (setq gc-cons-threshold 100000000)
+	    (setq read-process-output-max (* 1024 1024)) ;; 1mb
+	    (setq lsp-idle-delay 0.500)
+	    ;;(setq lsp-trace nil)
+	    (setq lsp-print-performance nil)
+	    (setq lsp-log-io nil))
+  :bind
+    (:map lsp-mode-map
+          (("\C-\M-g" . lsp-find-implementation)
+           ("M-RET" . lsp-execute-code-action)))
+  )
+
+(use-package lsp-treemacs :ensure t)
+(use-package lsp-ui
+  :ensure t)
+#+END_SRC
+
+#+RESULTS:
+
+*** BROKEN Origami
+#+BEGIN_SRC  emacs-lisp
+(use-package origami
+  :ensure t
+  :demand
+  :config
+  (define-prefix-command 'origami-mode-map)
+  (global-set-key (kbd "C-x C-z") 'origami-mode-map)
+  (global-set-key (kbd "<backtab>") 'origami-recursively-toggle-node)
+  (global-origami-mode)
+  :bind
+  (:map origami-mode-map
+   ("o" . origami-open-node)
+   ("O" . origami-open-node-recursively)
+   ("c" . origami-close-node)
+   ("C" . origami-close-node-recursively)
+   ("t" . origami-toggle-node)
+   ("a" . origami-recursively-toggle-node)
+   ("R" . origami-open-all-nodes)
+   ("M" . origami-close-all-nodes)
+   ("v" . origami-show-only-node)
+   ("k" . origami-previous-fold)
+   ("j" . origami-forward-fold)
+   ("x" . origami-reset)))
+#+END_SRC
+*** Автодополнение
+:PROPERTIES:
+:NAME: autocompletion
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :ensure t
+  :init
+  (setq company-idle-delay 0)
+  (setq company-minimum-prefix-length 1)
+  :config
+    (global-set-key (kbd "<C-return>") 'company-complete)
+    (global-company-mode 1)
+)
+#+END_SRC
+
+*** BROKEN Golang
+#+BEGIN_SRC emacs-lisp
+(use-package flycheck-golangci-lint
+	     :ensure t)
+(defun lsp-go-install-save-hooks ()
+  (add-hook 'before-save-hook #'lsp-format-buffer t t)
+  (add-hook 'before-save-hook #'lsp-organize-imports t t))
+#+END_SRC
+*** BROKEN Debug
+#+BEGIN_SRC emacs-lisp
+(use-package dap-mode
+  :ensure t
+  :custom
+  (lsp-enable-dap-auto-configure nil)
+  :config
+  (dap-mode 1)
+  (setq dap-print-io t)
+  ;;(setq fit-window-to-buffer-horizontally t)
+  ;;(setq window-resize-pixelwise t)
+  (require 'dap-hydra)
+  (require 'dap-dlv-go)
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1)
+  :hook
+  (dap-stopped . (lambda (arg) (call-interactively #'dap-hydra)))
+  )
+#+END_SRC
+*** BROKEN Java
+For details look here https://gitlab.com/skybert/my-little-friends/blob/master/emacs/.emacs
+lsp-workspace-folders-* to add/remove folder to/from LSP
+#+BEGIN_SRC emacs-lisp
+(use-package lsp-java
+  :ensure t
+  :config
+  (setq lsp-java-vmargs
+        (list
+         "-noverify"
+         "-Xmx3G"
+         "-XX:+UseG1GC"
+         "-XX:+UseStringDeduplication"
+         "-Djava.awt.headless=true"
+         )
+        lsp-java-java-path "/usr/lib/jvm/java-19-openjdk-amd64/bin/java"
+        ;; Don't organise imports on save
+        lsp-java-save-action-organize-imports nil
+	)
+  (setq lsp-java-configuration-runtimes '[(:name "JavaSE-19"
+                                                 :path "/usr/lib/jvm/java-19-openjdk-amd64"
+                                                 :default t)])
+  (add-hook 'java-mode-hook 'lsp)) 
+  (use-package java-snippets
+    :ensure t)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+
+
+
+(use-package which-key :ensure t :config (which-key-mode))
+
+
+
+;; DAP
+
+
+
+
+
+#+END_SRC
+** Git
+:PROPERTIES:
+:NAME: git
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package magit
+  :ensure t)
+#+END_SRC
+** Hugo
+:PROPERTIES:
+:NAME: hugo
+:END:
+#+BEGIN_SRC emacs-lisp
+(use-package ox-hugo
+  :ensure t)
+(setq org-hugo-base-dir "/home/alex/work/org-share")
+#+END_SRC
