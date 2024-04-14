@@ -53,7 +53,7 @@ font-1 = "FontAwesome:size=14;2"
 font-2 = "Material Icons:size=14;5"
 font-3 = "Fira Mono:size=14;-3"
 
-modules-left = cpu temperature exwm-workspace
+modules-left = cpu temperature wireless-network
 modules-right = backlight-acpi wireless-network battery pulseaudio
 modules-center = date
 tray-position = right
@@ -65,7 +65,7 @@ cursor-scroll = ns-resize
 
 [module/wireless-network]
 type = internal/network
-interface = wlp0s20f3
+interface = wlp2s0
 format-connected = <label-connected>
 ; Available tags:
 ;   <label-disconnected> (default)

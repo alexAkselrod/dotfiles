@@ -275,6 +275,48 @@
 (global-auto-revert-mode 1)
 #+END_SRC
 * Приложения
+** Pocket
+Commands operate on the current item or marked items. These
+keys can be used in the pocket-reader buffer:
+
+RET: Open with default browse function. TAB: Open with
+default pop-to function. b: Open with external browser
+function. a: Toggle archived/unread status. c: Copy URL to
+the kill ring. d: Show default view. D: Delete item. e: Show
+excerpt. E: Show excerpt for all items. *, f: Toggle
+favorite status. F: Show unread, favorite items. g: Re-sort
+list. G: Refresh list using last query (or default query).
+s: Search for items (or display default view if no query is
+entered). With prefix, add items instead of replacing (this
+can be used in lieu of boolean OR searches, since Pocket
+doesn’t support them). m: Toggle mark of current item. M:
+Mark all items. U: Unmark all items. o: Show more items
+(using the current count limit). l: Limit current view to
+items matching string (this does not run a new search). R:
+Open random item from current items. With prefix, read a key
+and call command bound to it instead of using the default
+opening function (e.g. use b to open in external browser).
+ta: Add tags. tr: Remove tags. tt: Set tags. ts: Search for
+a tag, or select _untagged_ for items with no tags.
+
+Searching
+
+These special keywords can be used when searching:
+
+:*, :favorite Return only favorited items. :archive Return
+only archived items. :unread Return only unread items
+(default). :all Return all items. :COUNT Return at most 
+COUNT (a number) items. This limit persists until a new
+search is run. :t:TAG, t:TAG Return items with TAG (only one
+tag may be searched for, a limitation of the Pocket API).
+
+#+begin_src emacs-lisp
+  (use-package pocket-reader
+    :ensure t)
+#+end_src
+
+#+RESULTS:
+
 ** Browser
 :PROPERTIES:
 :NAME: browser
@@ -291,6 +333,10 @@
   ("C-c w o" . w3m-goto-url)
  )
 #+END_SRC
+
+#+RESULTS:
+: w3m-goto-url
+
 ** Exchange
 :PROPERTIES:
 :NAME: exchange
@@ -375,9 +421,13 @@
 (use-package dired-rsync
   :ensure t
   :custom
-  (dired-rsync-command "/opt/local/bin/rsync" "Specify correct path to rsync on Mac")
+  (dired-rsync-command "/usr/bin/rsync" "Specify correct path to rsync on Mac")
   :bind (("C-c C-r" . dired-rsync)))
 #+END_SRC
+
+#+RESULTS:
+: dired-rsync
+
 ** Startup-Apps
 :PROPERTIES:
 :NAME: startup-apps
@@ -832,6 +882,12 @@ C-c C-w	org-present-read-write	Make the slides writable
           (org-agenda-max-todos 20)
           (org-agenda-files org-agenda-files)))))
 #+END_SRC
+
+#+RESULTS:
+| d | Dashboard  | ((agenda  ((org-deadline-warning-days 7))) (tags-todo (concat @tmsg: (get-month-tag)) ((org-agenda-overriding-header TMsg))) (tags-todo (concat @twork: (get-month-tag)) ((org-agenda-overriding-header TWork))) (tags-todo (concat @derevyanko: (get-month-tag)) ((org-agenda-overriding-header Derevyanko))) (tags-todo (concat @self_service: (get-month-tag)) ((org-agenda-overriding-header Self Service))) (tags-todo (concat (get-month-tag) -@tmsg-@twork-@derevyanko-@self_service) ((org-agenda-overriding-header Other))) (todo TODO ((org-agenda-overriding-header Unprocessed Inbox Tasks) (org-agenda-text-search-extra-files nil)))) |                                                                                                                 |
+| n | Next Tasks | ((agenda  ((org-deadline-warning-days 7))) (todo NEXT ((org-agenda-overriding-header Next Tasks))))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                 |
+| e | tags-todo  | +TODO="NEXT"+Effort<15&+Effort>0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ((org-agenda-overriding-header Low Effort Tasks) (org-agenda-max-todos 20) (org-agenda-files org-agenda-files)) |
+
 ** Capture Templates
 :PROPERTIES:
 :NAME: templates
@@ -892,6 +948,11 @@ C-c C-w	org-present-read-write	Make the slides writable
          :clock-in :clock-resume
          :empty-lines 1)))
 #+END_SRC
+
+#+RESULTS:
+| t  | Tasks |       |                         |           |
+| tt | Task  | entry | (file ~/work/Inbox.org) | * TODO %? |
+
 ** Org Roam
 :PROPERTIES:
 :NAME: org-roam
