@@ -145,7 +145,7 @@
 (tooltip-mode -1)           ; Disable tooltips
 (set-fringe-mode 10)       ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
-
+(use-package which-key :ensure t :config (which-key-mode))
 ;; Set up the visible bell
 (setq visible-bell t)
 
@@ -606,6 +606,10 @@ _-_: dec     _p_: prev        _R_: repeat all [% s(my/tick-symbol emms-repeat-pl
   )
 #+END_SRC
 * OrgMode
+:PROPERTIES:
+:NAME: orgmode
+:END:
+
 - C-c C-,
    
     Prompt for a type of block structure, and insert the
@@ -623,9 +627,7 @@ _-_: dec     _p_: prev        _R_: repeat all [% s(my/tick-symbol emms-repeat-pl
 - C-c C-u
    
     Backward to higher level heading.
-:PROPERTIES:
-:NAME: orgmode
-:END:
+
 #+BEGIN_SRC emacs-lisp
 (setq org-refile-targets '(
 			  (nil :maxlevel . 3)
@@ -797,7 +799,6 @@ C-c C-w	org-present-read-write	Make the slides writable
 
 (setq org-confirm-babel-evaluate 'nil)
 (setq org-src-preserve-indentation 't)
-
 #+END_SRC
 
 ** Agenda
@@ -805,44 +806,6 @@ C-c C-w	org-present-read-write	Make the slides writable
 :NAME: agenda
 :DEPENDS: orgmode
 :END:
-
-- v d or short d
-   
-    Switch to day view.
-   
-- v w or short w
-   
-    Switch to week view.
-   
-- f
-   
-    Go forward in time to display the span following the
-    current one.For example, if the display covers a week,
-    switch to the followingweek.
-   
-- b
-   
-    Go backward in time to display earlier dates.
-   
-- .
-   
-    Go to today.
-   
-- j
-   
-    Prompt for a date and go there.
-   
-- r g
-   
-    Recreate the agenda buffer, for example to reflect the
-    changes aftermodification of the timestamps of items.
-   
-- s 
-   
-    Save all Org buffers in the current Emacs session, and
-    also thelocations of IDs.
-
-
 #+BEGIN_SRC emacs-lisp
 (setq org-agenda-window-setup 'current-window)
 (setq org-agenda-span 'day)
@@ -887,7 +850,42 @@ C-c C-w	org-present-read-write	Make the slides writable
 | d | Dashboard  | ((agenda  ((org-deadline-warning-days 7))) (tags-todo (concat @tmsg: (get-month-tag)) ((org-agenda-overriding-header TMsg))) (tags-todo (concat @twork: (get-month-tag)) ((org-agenda-overriding-header TWork))) (tags-todo (concat @derevyanko: (get-month-tag)) ((org-agenda-overriding-header Derevyanko))) (tags-todo (concat @self_service: (get-month-tag)) ((org-agenda-overriding-header Self Service))) (tags-todo (concat (get-month-tag) -@tmsg-@twork-@derevyanko-@self_service) ((org-agenda-overriding-header Other))) (todo TODO ((org-agenda-overriding-header Unprocessed Inbox Tasks) (org-agenda-text-search-extra-files nil)))) |                                                                                                                 |
 | n | Next Tasks | ((agenda  ((org-deadline-warning-days 7))) (todo NEXT ((org-agenda-overriding-header Next Tasks))))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                 |
 | e | tags-todo  | +TODO="NEXT"+Effort<15&+Effort>0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ((org-agenda-overriding-header Low Effort Tasks) (org-agenda-max-todos 20) (org-agenda-files org-agenda-files)) |
-
+*** Help
+- v d or short d
+   
+    Switch to day view.
+   
+- v w or short w
+   
+    Switch to week view.
+   
+- f
+   
+    Go forward in time to display the span following the
+    current one.For example, if the display covers a week,
+    switch to the followingweek.
+   
+- b
+   
+    Go backward in time to display earlier dates.
+   
+- .
+   
+    Go to today.
+   
+- j
+   
+    Prompt for a date and go there.
+   
+- r g
+   
+    Recreate the agenda buffer, for example to reflect the
+    changes aftermodification of the timestamps of items.
+   
+- s 
+   
+    Save all Org buffers in the current Emacs session, and
+    also thelocations of IDs.
 ** Capture Templates
 :PROPERTIES:
 :NAME: templates
@@ -1217,12 +1215,6 @@ lsp-workspace-folders-* to add/remove folder to/from LSP
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
-
-
-
-(use-package which-key :ensure t :config (which-key-mode))
-
-
 
 ;; DAP
 
